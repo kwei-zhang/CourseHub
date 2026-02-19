@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+package-lock.json
+curl-test.sh
+
+# Environment (do not commit secrets)
+.env
+.env.*
+!.env.example
+
+# Prisma generated client (regenerate with: npx prisma generate)
+generated/
+
+# Build
+dist/
+*.tsbuildinfo
+
+# Logs
+*.log

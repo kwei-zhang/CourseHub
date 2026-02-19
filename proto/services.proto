@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package ece1779;
+
+message GetRequest {}
+
+message GetResponse {
+  string message = 1;
+}
+
+service UserService {
+  rpc Get(GetRequest) returns (GetResponse);
+}
+
+service FileService {
+  rpc Get(GetRequest) returns (GetResponse);
+}
+
+service SystemService {
+  rpc Get(GetRequest) returns (GetResponse);
+}

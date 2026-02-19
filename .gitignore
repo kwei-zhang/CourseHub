@@ -1,14 +1,35 @@
-/node_modules/
-/dist
-/build
-/coverage
-/logs
-/temp
-/uploads
-/backups
-/cache
-/config
-/docs
-/examples
-/tests
-/tmp
+# Dependencies
+node_modules/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Build and output
+dist/
+build/
+*.tsbuildinfo
+
+# Prisma (generated client; optional to commit)
+# auth/generated/
+
+# Logs and debug
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE (uncomment if you don't want to share)
+# .idea/
+# .vscode/
+# *.swp
+# *.swo
+
+# Docker
+.docker/
+
+# Optional: local overrides
+*.local
