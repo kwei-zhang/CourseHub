@@ -3,7 +3,7 @@ import type grpc from "@grpc/grpc-js";
 /** Response shape from user/file/system get RPCs. */
 export type GetResponse = { message: string };
 
-/** Response shape from UserService.GetUser RPC. */
+/** Response shape from UserService.GetUser / UpdateUser RPC. */
 export type GetUserResponse = {
   id: string;
   name: string;
@@ -14,6 +14,24 @@ export type GetUserResponse = {
   updated_at: string;
   role: string;
 };
+
+/** Request payload for UserService.UpdateUser (optional fields). */
+export type UpdateUserRequest = {
+  user_id: string;
+  name?: string;
+  image?: string;
+  role?: string;
+  email_verified?: boolean;
+};
+
+/** Response from UserService.DeleteUser. */
+export type DeleteUserResponse = { ok: boolean };
+
+/** Response from UserService.SearchUsersByName. */
+export type SearchUsersByNameResponse = { users: GetUserResponse[] };
+
+/** Response from UserService.GetUserByEmail. */
+export type GetUserByEmailResponse = { user?: GetUserResponse };
 
 /** Loaded proto package with service constructors. */
 export interface Ece1779Package {

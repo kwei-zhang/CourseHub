@@ -23,9 +23,45 @@ message GetUserResponse {
   string role = 8;
 }
 
+message UpdateUserRequest {
+  string user_id = 1;
+  optional string name = 2;
+  optional string image = 3;
+  optional string role = 4;
+  optional bool email_verified = 5;
+}
+
+message DeleteUserRequest {
+  string user_id = 1;
+}
+
+message DeleteUserResponse {
+  bool ok = 1;
+}
+
+message SearchUsersByNameRequest {
+  string name_query = 1;
+}
+
+message SearchUsersByNameResponse {
+  repeated GetUserResponse users = 1;
+}
+
+message GetUserByEmailRequest {
+  string email = 1;
+}
+
+message GetUserByEmailResponse {
+  GetUserResponse user = 1;
+}
+
 service UserService {
   rpc Get(GetRequest) returns (GetResponse);
   rpc GetUser(GetUserRequest) returns (GetUserResponse);
+  rpc UpdateUser(UpdateUserRequest) returns (GetUserResponse);
+  rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
+  rpc SearchUsersByName(SearchUsersByNameRequest) returns (SearchUsersByNameResponse);
+  rpc GetUserByEmail(GetUserByEmailRequest) returns (GetUserByEmailResponse);
 }
 
 service FileService {

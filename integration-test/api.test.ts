@@ -149,6 +149,124 @@ describe("Integration: User server (via auth proxy)", { timeout: TIMEOUT_MS }, (
     assert.ok((data as { error?: string }).error);
   });
 
+  it("PUT /user/:userId with token updates user and returns updated object", async () => {
+    const newName = "Integration Test User Updated";
+    const { status, data } = await fetchOk(`${BASE}/user/${userId}`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${authToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ name: newName }),
+    });
+    assert.strictEqual(status, 200);
+    const u = data as { id?: string; name?: string };
+    assert.strictEqual(u.id, userId);
+    assert.strictEqual(u.name, newName);
+    // Restore name for later tests that might expect it
+    await fetchOk(`${BASE}/user/${userId}`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${authToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ name: "Integration Test User" }),
+    });
+  });
+
+  it("PUT /user/nonexistent with token returns 404", async () => {
+    const { status, data } = await fetchOk(
+      `${BASE}/user/cuid00000000000000000nonexistent`,
+      {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name: "No" }),
+      }
+    );
+    assert.strictEqual(status, 404);
+    assert.ok((data as { error?: string }).error);
+  });
+
+  it("GET /user/search?name= with token returns users array", async () => {
+    const { status, data } = await fetchOk(
+      `${BASE}/user/search?name=Integration`,
+      { headers: { Authorization: `Bearer ${authToken}` } }
+    );
+    assert.strictEqual(status, 200);
+    const d = data as { users?: Array<{ id: string; name: string }> };
+    assert.ok(Array.isArray(d.users));
+    const found = d.users?.find((u) => u.id === userId);
+    assert.ok(found, "Created user should appear in search");
+    assert.ok((found as { name: string }).name.includes("Integration"));
+  });
+
+  it("GET /user/search?name= with no match returns empty array", async () => {
+    const { status, data } = await fetchOk(
+      `${BASE}/user/search?name=NonExistentNobody${Date.now()}`,
+      { headers: { Authorization: `Bearer ${authToken}` } }
+    );
+    assert.strictEqual(status, 200);
+    const d = data as { users?: unknown[] };
+    assert.ok(Array.isArray(d.users));
+    assert.strictEqual(d.users?.length, 0);
+  });
+
+  it("GET /user/by-email?email= with token returns user", async () => {
+    const { status, data } = await fetchOk(
+      `${BASE}/user/by-email?email=${encodeURIComponent(testEmail)}`,
+      { headers: { Authorization: `Bearer ${authToken}` } }
+    );
+    assert.strictEqual(status, 200);
+    const d = data as { user?: { id: string; email: string } };
+    assert.ok(d.user);
+    assert.strictEqual(d.user.id, userId);
+    assert.strictEqual(d.user.email, testEmail);
+  });
+
+  it("GET /user/by-email without email query returns 400", async () => {
+    const { status, data } = await fetchOk(`${BASE}/user/by-email`, {
+      headers: { Authorization: `Bearer ${authToken}` },
+    });
+    assert.strictEqual(status, 400);
+    assert.ok((data as { error?: string }).error);
+  });
+
+  it("DELETE /user/:userId with token returns ok and user is gone", async () => {
+    const deleteEmail = `integration-delete-${Date.now()}@example.com`;
+    const signUpRes = await fetchOk(`${AUTH_BASE}/sign-up/email`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Origin: BASE,
+        Referer: `${BASE}/`,
+      },
+      body: JSON.stringify({
+        email: deleteEmail,
+        password: "secret123",
+        name: "To Be Deleted",
+      }),
+    });
+    assert.strictEqual(signUpRes.status, 200);
+    const created = signUpRes.data as { user?: { id: string } };
+    const toDeleteId = created.user?.id;
+    assert.ok(toDeleteId, "Second user should be created");
+
+    const delRes = await fetchOk(`${BASE}/user/${toDeleteId}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${authToken}` },
+    });
+    assert.strictEqual(delRes.status, 200);
+    assert.strictEqual((delRes.data as { ok?: boolean }).ok, true);
+
+    const getRes = await fetchOk(`${BASE}/user/${toDeleteId}`, {
+      headers: { Authorization: `Bearer ${authToken}` } },
+    );
+    assert.strictEqual(getRes.status, 404);
+  });
+
   it("GET /user/get without token returns 401", async () => {
     const { status } = await fetchOk(`${BASE}/user/get`);
     assert.strictEqual(status, 401);
