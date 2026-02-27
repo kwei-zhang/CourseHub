@@ -3,9 +3,12 @@ import { bearer } from "better-auth/plugins";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "./prisma";
 
+const baseURL = process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
+
 export const auth = betterAuth({
-  baseURL: process.env.BETTER_AUTH_URL ?? "http://localhost:3000",
+  baseURL,
   secret: process.env.BETTER_AUTH_SECRET,
+  trustedOrigins: [baseURL, "http://localhost:3000", "http://127.0.0.1:3000"],
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),

@@ -31,7 +31,8 @@ ECE1779-Project/
 ├── auth/            # Auth service: REST API + gRPC client to backend servers
 ├── user-server/     # User server (gRPC)
 ├── file-server/     # File server (gRPC)
-└── system-server/   # System server (gRPC)
+├── system-server/   # System server (gRPC)
+└── integration-test/ # Integration tests (run after docker compose up)
 ```
 
 ## How to run
@@ -82,6 +83,16 @@ docker compose up --build
 - **auth** (REST): 3000  
 
 Then: `curl http://localhost:3000/user/get` (and `/file/get`, `/system/get`).
+
+### Integration tests (after Docker is up)
+
+```bash
+cd integration-test
+npm install
+npm test
+```
+
+See `integration-test/README.md` for details.
 
 **If auth fails with "failed migrations" (e.g. P3009):** reset the DB and rebuild auth so migrations run in a clean state:
 
