@@ -11,9 +11,11 @@ curl-test.sh
 # Prisma generated client (regenerate with: npx prisma generate)
 generated/
 
-# Build
+# Build (we run with tsx; tsc is type-check only with noEmit)
 dist/
 *.tsbuildinfo
+src/**/*.js
+prisma.config.js
 
 # Logs
 *.log

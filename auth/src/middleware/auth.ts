@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
-import { getSessionUser } from "../lib/session";
+import { auth } from "../lib/auth";
+import { fromNodeHeaders } from "better-auth/node";
 
 export type AuthUser = { id: string; email: string | null; name: string | null; role: string };
 
@@ -12,10 +13,10 @@ declare global {
 }
 
 /**
- * Reads Bearer token from Authorization header (or X-Auth-Token) and sets req.user if valid.
+ * Reads Bearer token from Authorization header (or X-Auth-Token) and sets req.user via Better Auth getSession.
  * Responds with 401 if missing or invalid.
  */
-export function requireAuth(req: Request, res: Response, next: NextFunction): void {
+export async function requireAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
   const authHeader = req.headers.authorization;
   const token =
     (authHeader?.startsWith("Bearer ") && authHeader.slice(7)) ||
@@ -26,16 +27,23 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
     return;
   }
 
-  getSessionUser(token)
-    .then((user) => {
-      if (!user) {
-        res.status(401).json({ error: "Invalid or expired token" });
-        return;
-      }
-      req.user = user;
-      next();
-    })
-    .catch(() => {
-      res.status(500).json({ error: "Auth check failed" });
+  try {
+    const session = await auth.api.getSession({
+      headers: fromNodeHeaders({ ...req.headers, authorization: `Bearer ${token}` }),
     });
+    if (!session?.user) {
+      res.status(401).json({ error: "Invalid or expired token" });
+      return;
+    }
+    const u = session.user as AuthUser & { role?: string };
+    req.user = {
+      id: u.id,
+      email: u.email ?? null,
+      name: u.name ?? null,
+      role: u.role ?? "user",
+    };
+    next();
+  } catch {
+    res.status(500).json({ error: "Auth check failed" });
+  }
 }

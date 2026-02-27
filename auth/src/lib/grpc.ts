@@ -22,7 +22,7 @@ interface Ece1779Package {
   FileService: grpc.ServiceClientConstructor;
   SystemService: grpc.ServiceClientConstructor;
 }
-const proto = (grpc.loadPackageDefinition(packageDefinition) as { ece1779: Ece1779Package }).ece1779;
+const proto = (grpc.loadPackageDefinition(packageDefinition) as unknown as { ece1779: Ece1779Package }).ece1779;
 
 const userTarget = process.env.USER_SERVER ?? "localhost:5001";
 const fileTarget = process.env.FILE_SERVER ?? "localhost:5002";

@@ -9,7 +9,7 @@ COPY auth/prisma ./prisma
 COPY auth/src ./src
 COPY auth/tsconfig.json ./
 
-# Install all deps (prisma CLI needed for migrate)
+# Install all deps (prisma CLI for migrate)
 RUN npm ci
 
 # Generate Prisma client (output: generated/prisma per schema)
@@ -17,5 +17,5 @@ RUN npx prisma generate
 
 EXPOSE 3000
 
-# Run migrations then start the server (DATABASE_URL from compose)
+# Run init migration then start (DATABASE_URL from compose)
 CMD ["sh", "-c", "npx prisma migrate deploy && npm start"]

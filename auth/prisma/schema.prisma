@@ -10,56 +10,63 @@ datasource db {
   provider = "postgresql"
 }
 
-// --- Auth schema: email/password + Google OAuth ---
-// One User can sign in via email+password (Credential) and/or Google (Account).
+// --- Better Auth schema (see https://www.better-auth.com/docs/concepts/database) ---
 
 model User {
   id            String    @id @default(cuid())
-  email         String?   @unique // from sign-up or OAuth (Google provides it)
-  name          String?
+  name          String
+  email         String    @unique
+  emailVerified Boolean   @default(false)
   image         String?
-  emailVerified DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   role          String    @default("user")
+  sessions      Session[]
+  accounts      Account[]
 
-  credential Credential?
-  accounts   Account[]
-  sessions   Session[]
+  @@map("user")
 }
 
-/// Email/password login: one hashed password per user (optional).
-model Credential {
-  id           String   @id @default(cuid())
-  userId       String   @unique
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  passwordHash String   // e.g. bcrypt
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-}
-
-/// OAuth providers (e.g. Google). One row per provider per user.
-model Account {
-  id                String    @id @default(cuid())
-  userId            String
-  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  provider          String    // "google"
-  providerAccountId String    // e.g. Google's "sub"
-  accessToken       String?
-  refreshToken      String?
-  expiresAt         DateTime?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-
-  @@unique([provider, providerAccountId])
-}
-
-/// Sessions for "remember me" / token-based auth (optional).
 model Session {
   id        String   @id @default(cuid())
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  token     String   @unique
-  expiresAt DateTime
-  createdAt DateTime @default(now())
+
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@map("account")
+}
+
+model Verification {
+  id         String    @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime?
+  updatedAt  DateTime?
+
+  @@map("verification")
 }
