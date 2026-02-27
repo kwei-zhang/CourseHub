@@ -3,6 +3,18 @@ import type grpc from "@grpc/grpc-js";
 /** Response shape from user/file/system get RPCs. */
 export type GetResponse = { message: string };
 
+/** Response shape from UserService.GetUser RPC. */
+export type GetUserResponse = {
+  id: string;
+  name: string;
+  email: string;
+  email_verified: boolean;
+  image: string;
+  created_at: string;
+  updated_at: string;
+  role: string;
+};
+
 /** Loaded proto package with service constructors. */
 export interface Ece1779Package {
   UserService: grpc.ServiceClientConstructor;

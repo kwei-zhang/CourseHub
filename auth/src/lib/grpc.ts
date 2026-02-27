@@ -2,9 +2,9 @@ import path from "path";
 import { fileURLToPath } from "url";
 import grpc from "@grpc/grpc-js";
 import protoLoader from "@grpc/proto-loader";
-import type { Ece1779Package, GetResponse } from "../types/grpc";
+import type { Ece1779Package, GetResponse, GetUserResponse } from "../types/grpc";
 
-export type { GetResponse } from "../types/grpc";
+export type { GetResponse, GetUserResponse } from "../types/grpc";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -36,6 +36,20 @@ export function userGet(metadata?: grpc.Metadata): Promise<GetResponse> {
       if (err) reject(err);
       else resolve(res ?? { message: "" });
     });
+  });
+}
+
+export function userGetUser(userId: string, metadata?: grpc.Metadata): Promise<GetUserResponse> {
+  return new Promise((resolve, reject) => {
+    userClient.getUser(
+      { user_id: userId },
+      metadata ?? new grpc.Metadata(),
+      (err: Error | null, res?: GetUserResponse) => {
+        if (err) reject(err);
+        else if (!res) reject(new Error("Empty response"));
+        else resolve(res);
+      }
+    );
   });
 }
 

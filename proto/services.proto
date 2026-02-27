@@ -8,8 +8,24 @@ message GetResponse {
   string message = 1;
 }
 
+message GetUserRequest {
+  string user_id = 1;
+}
+
+message GetUserResponse {
+  string id = 1;
+  string name = 2;
+  string email = 3;
+  bool email_verified = 4;
+  string image = 5;
+  string created_at = 6;
+  string updated_at = 7;
+  string role = 8;
+}
+
 service UserService {
   rpc Get(GetRequest) returns (GetResponse);
+  rpc GetUser(GetUserRequest) returns (GetUserResponse);
 }
 
 service FileService {

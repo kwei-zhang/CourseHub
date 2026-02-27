@@ -1,12 +1,23 @@
 {
   "name": "user-server",
   "version": "1.0.0",
-  "main": "index.js",
+  "type": "module",
+  "main": "src/index.ts",
   "scripts": {
-    "start": "node index.js"
+    "start": "tsx src/index.ts",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@grpc/grpc-js": "^1.9.14",
-    "@grpc/proto-loader": "^0.7.10"
+    "@grpc/proto-loader": "^0.7.10",
+    "@prisma/adapter-pg": "^7.4.0",
+    "@prisma/client": "^7.4.0",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "prisma": "^7.4.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.0.0"
   }
 }

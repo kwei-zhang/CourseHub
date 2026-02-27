@@ -63,6 +63,7 @@ ECE1779-Project/
 
    ```bash
    curl http://localhost:3000/user/get   # {"message":"hello"}
+   curl -H "Authorization: Bearer <token>" http://localhost:3000/user/<userId>   # get user info by id
    curl http://localhost:3000/file/get   # {"message":"hello"}
    curl http://localhost:3000/system/get # {"message":"hello"}
    ```

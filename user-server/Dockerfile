@@ -6,9 +6,9 @@ COPY proto /app/proto
 COPY user-server /app/user-server
 
 WORKDIR /app/user-server
-RUN npm install --production
+RUN npm ci && npx prisma generate
 
 ENV NODE_ENV=production
 EXPOSE 5001
 
-CMD ["node", "index.js"]
+CMD ["npm", "start"]

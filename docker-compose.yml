@@ -20,6 +20,11 @@ services:
       dockerfile: user-server/Dockerfile
     ports:
       - "5001:5001"
+    environment:
+      DATABASE_URL: postgresql://ece1779:ece1779@db:5432/ece1779
+    depends_on:
+      db:
+        condition: service_healthy
     restart: unless-stopped
 
   file-server:
