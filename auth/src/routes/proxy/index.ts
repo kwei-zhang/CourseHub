@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { requireAuth } from "../../middleware/auth";
+import { requireAuth, requireRole } from "../../middleware/auth";
 import userProxy from "./user";
 import fileProxy from "./file";
 import systemProxy from "./system";
@@ -11,6 +11,6 @@ router.use(requireAuth);
 
 router.use("/user", userProxy);
 router.use("/file", fileProxy);
-router.use("/system", systemProxy);
+router.use("/system", requireRole("admin"), systemProxy);
 
 export default router;

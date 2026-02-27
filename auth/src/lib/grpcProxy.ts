@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import grpc from "@grpc/grpc-js";
+import type { GrpcCall } from "../types/grpc";
 
 /** Build gRPC metadata with user id for backend services. */
 export function metadataForUser(userId: string): grpc.Metadata {
@@ -7,8 +8,6 @@ export function metadataForUser(userId: string): grpc.Metadata {
   md.add("x-user-id", userId);
   return md;
 }
-
-type GrpcCall<T> = (metadata?: grpc.Metadata) => Promise<T>;
 
 /**
  * Factory for proxy handlers: call a gRPC method with auth user metadata and return JSON.
