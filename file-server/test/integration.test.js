@@ -158,7 +158,7 @@ async function run() {
     );
     const uploadSuccessLog = accessLogs[logsBeforeUploadSuccess];
     assert.ok(uploadSuccessLog);
-    assert.strictEqual(uploadSuccessLog.action, "UPLOAD");
+    assert.strictEqual(uploadSuccessLog.action, "UPLOAD_URL_ISSUED");
     assert.strictEqual(uploadSuccessLog.userId, "user_123");
     assert.strictEqual(uploadSuccessLog.resourceId, uploadRes.object_key);
     assert.match(uploadSuccessLog.details, /rpc=GetUploadUrl status=SUCCESS/);
@@ -178,7 +178,7 @@ async function run() {
     );
     const uploadFailureLog = accessLogs[logsBeforeUploadFailure];
     assert.ok(uploadFailureLog);
-    assert.strictEqual(uploadFailureLog.action, "UPLOAD");
+    assert.strictEqual(uploadFailureLog.action, "UPLOAD_URL_DENIED");
     assert.strictEqual(uploadFailureLog.userId, "user_123");
     assert.strictEqual(uploadFailureLog.resourceId, "");
     assert.match(uploadFailureLog.details, /rpc=GetUploadUrl status=FAILURE/);
@@ -191,7 +191,7 @@ async function run() {
     );
     const downloadMissingResourceLog = accessLogs[logsBeforeDownloadMissingResource];
     assert.ok(downloadMissingResourceLog);
-    assert.strictEqual(downloadMissingResourceLog.action, "DOWNLOAD_DENIED");
+    assert.strictEqual(downloadMissingResourceLog.action, "DOWNLOAD_URL_DENIED");
     assert.strictEqual(downloadMissingResourceLog.resourceId, "");
     assert.match(downloadMissingResourceLog.details, /rpc=GetDownloadUrl status=FAILURE/);
     console.log("PASS GetDownloadUrl rejects missing resource_id");
@@ -223,11 +223,11 @@ async function run() {
     );
     const downloadDeniedLog = accessLogs[logsBeforeDownloadDenied];
     assert.ok(downloadDeniedLog);
-    assert.strictEqual(downloadDeniedLog.action, "DOWNLOAD_DENIED");
+    assert.strictEqual(downloadDeniedLog.action, "DOWNLOAD_URL_DENIED");
     assert.strictEqual(downloadDeniedLog.userId, "student_1");
     assert.strictEqual(downloadDeniedLog.resourceId, "res_exam");
     assert.match(downloadDeniedLog.details, /rpc=GetDownloadUrl status=FAILURE/);
-    console.log("PASS GetDownloadUrl denial logs DOWNLOAD_DENIED");
+    console.log("PASS GetDownloadUrl denial logs DOWNLOAD_URL_DENIED");
 
     console.log("All file-server integration tests passed.");
   } finally {

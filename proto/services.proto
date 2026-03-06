@@ -131,11 +131,12 @@ message RecordAccessLogResponse {
 }
 
 enum AccessAction {
-  UPLOAD = 0;
-  DOWNLOAD_URL_ISSUED = 1;
-  DOWNLOAD_DENIED = 2;
-  METADATA_CREATED = 3;
-  RESOURCE_DELETED = 4;
+  UPLOAD_URL_ISSUED = 0;
+  UPLOAD_URL_DENIED = 1;
+  DOWNLOAD_URL_ISSUED = 2;
+  DOWNLOAD_URL_DENIED = 3;
+  METADATA_CREATED = 4;
+  RESOURCE_DELETED = 5;
 }
 
 service ResourceService {

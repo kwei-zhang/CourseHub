@@ -18,4 +18,4 @@ RUN npx prisma generate
 EXPOSE 3000
 
 # Run init migration then start (DATABASE_URL from compose)
-CMD ["sh", "-c", "npx prisma migrate deploy && npm start"]
+CMD ["sh", "-c", "npm start"]

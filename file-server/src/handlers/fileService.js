@@ -31,7 +31,7 @@ function createFileServiceHandlers({
       safeRecordAccessLog({
         userId: uploaderId || "",
         resourceId: "",
-        action: "UPLOAD",
+        action: "UPLOAD_URL_DENIED",
         details: `rpc=GetUploadUrl status=FAILURE ${details || message}`,
       }).finally(() => callback({ code, message }));
     }
@@ -65,7 +65,7 @@ function createFileServiceHandlers({
         safeRecordAccessLog({
           userId: uploaderId,
           resourceId: objectKey,
-          action: "UPLOAD",
+          action: "UPLOAD_URL_ISSUED",
           details: `rpc=GetUploadUrl status=SUCCESS objectKey=${objectKey} policy=${policy}`,
         }).finally(() => callback(null, { url, object_key: objectKey }))
       )
@@ -83,7 +83,7 @@ function createFileServiceHandlers({
       safeRecordAccessLog({
         userId: requesterUserId || "",
         resourceId: resourceId || "",
-        action: "DOWNLOAD_DENIED",
+        action: "DOWNLOAD_URL_DENIED",
         details: `rpc=GetDownloadUrl status=FAILURE ${details || message}`,
       }).finally(() => callback({ code, message }));
     }
