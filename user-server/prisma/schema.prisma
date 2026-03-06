@@ -9,14 +9,56 @@ datasource db {
 }
 
 model User {
-  id            String   @id @default(cuid())
+  id            String     @id @default(cuid())
   name          String
-  email         String   @unique
-  emailVerified Boolean  @default(false)
+  email         String     @unique
+  emailVerified Boolean    @default(false)
   image         String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  role          String   @default("user")
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  role          String     @default("user")
+  resources     Resource[]
 
   @@map("user")
+}
+
+enum VisibilityPolicy {
+  LECTURE
+  ASSIGNMENT
+  EXAM
+  SOLUTION
+  HIGHLY_SENSITIVE
+}
+
+model Resource {
+  id          String           @id @default(cuid())
+  title       String
+  courseCode  String
+  topic       String?
+  instructor  String?
+  uploadDate  DateTime         @default(now())
+  tags        String[]         @default([])
+  contentType String
+  objectKey   String           @unique
+  policy      VisibilityPolicy @default(LECTURE)
+
+  uploaderId String
+  uploader   User   @relation(fields: [uploaderId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("resource")
+}
+
+model AccessLog {
+  id         String   @id @default(cuid())
+  userId     String
+  resourceId String
+  action     String // "UPLOAD" | "DOWNLOAD" | "DENIED" etc.
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([resourceId])
+  @@map("access_log")
 }
