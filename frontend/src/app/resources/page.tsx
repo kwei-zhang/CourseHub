@@ -8,16 +8,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-import { MOCK_RESOURCES } from "@/lib/mock-data";
+import { getResources } from "@/lib/api";
+import { Resource } from "@/lib/types";
 
 export default function Home() {
   const [search, setSearch] = useState("");
+  const [resources, setResources] = useState<Resource[]>([]);
 
-  const filteredResources = MOCK_RESOURCES.filter((r) =>
+  useEffect(() => {
+    getResources().then(setResources);
+  }, []);
+
+  const filteredResources = resources.filter((r) =>
     r.title.toLowerCase().includes(search.toLowerCase()),
   );
 

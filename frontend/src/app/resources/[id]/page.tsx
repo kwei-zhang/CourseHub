@@ -1,16 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { MOCK_RESOURCES } from "@/lib/mock-data";
-
-type Resource = {
-  id: string;
-  title: string;
-  course: string;
-  topic: string;
-  tags: string[];
-  updatedAt: string;
-  description: string;
-};
+import { getResource } from "@/lib/api";
 
 export default async function ResourceDetailPage({
   params,
@@ -18,7 +8,7 @@ export default async function ResourceDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const resource = MOCK_RESOURCES.find((item) => item.id === id);
+  const resource = await getResource(id);
 
   if (!resource) {
     return <div className="text-sm text-red-500">Resource not found.</div>;
