@@ -7,7 +7,6 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Resource } from "@/lib/types";
 import { deleteResource } from "@/lib/api";
-import { useRouter } from "next/navigation";
 import {
   Dialog,
   DialogTrigger,
@@ -18,6 +17,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { currentUserRole } from "@/lib/auth";
 
 export default function ResourceDetailPage() {
   const params = useParams<{ id: string }>();
@@ -69,45 +69,50 @@ export default function ResourceDetailPage() {
           >
             Download
           </Button>
-          <Link href={`/resources/${resource.id}/edit`}>
-            <Button variant="outline">Edit</Button>
-          </Link>
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button variant="destructive">Delete</Button>
-            </DialogTrigger>
+          {currentUserRole === "instructor" && (
+            <Link href={`/resources/${resource.id}/edit`}>
+              <Button variant="outline">Edit</Button>
+            </Link>
+          )}
 
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Delete Resource</DialogTitle>
-                <DialogDescription>
-                  Are you sure you want to delete this resource? This action
-                  cannot be undone.
-                </DialogDescription>
-              </DialogHeader>
+          {currentUserRole === "instructor" && (
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="destructive">Delete</Button>
+              </DialogTrigger>
 
-              <DialogFooter className="flex gap-2">
-                <DialogTrigger asChild>
-                  <Button variant="outline">Cancel</Button>
-                </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Delete Resource</DialogTitle>
+                  <DialogDescription>
+                    Are you sure you want to delete this resource? This action
+                    cannot be undone.
+                  </DialogDescription>
+                </DialogHeader>
 
-                <Button
-                  variant="destructive"
-                  onClick={async () => {
-                    await deleteResource(resource.id);
+                <DialogFooter className="flex gap-2">
+                  <DialogTrigger asChild>
+                    <Button variant="outline">Cancel</Button>
+                  </DialogTrigger>
 
-                    toast.success("Resource deleted");
+                  <Button
+                    variant="destructive"
+                    onClick={async () => {
+                      await deleteResource(resource.id);
 
-                    setTimeout(() => {
-                      window.location.href = "/resources";
-                    }, 800);
-                  }}
-                >
-                  Delete
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+                      toast.success("Resource deleted");
+
+                      setTimeout(() => {
+                        window.location.href = "/resources";
+                      }, 800);
+                    }}
+                  >
+                    Delete
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
       </div>
 

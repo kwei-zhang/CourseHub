@@ -2,15 +2,24 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { currentUserRole } from "@/lib/auth";
 
 export default function Sidebar() {
   const pathname = usePathname();
 
   const navItems = [
-    { href: "/resources", label: "Resources" },
-    { href: "/upload", label: "Upload" },
-    { href: "/manage", label: "Manage" },
+    {
+      href: "/resources",
+      label: "Resources",
+      roles: ["student", "ta", "instructor"],
+    },
+    { href: "/upload", label: "Upload", roles: ["ta", "instructor"] },
+    { href: "/manage", label: "Manage", roles: ["ta", "instructor"] },
   ];
+
+  const visibleItems = navItems.filter((item) =>
+    item.roles.includes(currentUserRole),
+  );
 
   return (
     <aside className="w-60 border-r min-h-[calc(100vh-56px)] p-4">
@@ -19,7 +28,7 @@ export default function Sidebar() {
       </div>
 
       <div className="space-y-1">
-        {navItems.map((item) => {
+        {visibleItems.map((item) => {
           const active = pathname === item.href;
 
           return (
