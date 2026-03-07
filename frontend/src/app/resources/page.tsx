@@ -1,3 +1,5 @@
+"use client";
+
 import {
   Table,
   TableBody,
@@ -6,29 +8,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useState } from "react";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-
-const MOCK = [
-  {
-    id: "r1",
-    title: "Lecture 1 - Intro to gRPC",
-    course: "ECE1779",
-    topic: "gRPC",
-    tags: ["lecture", "grpc"],
-    updatedAt: "2026-03-01",
-  },
-  {
-    id: "r2",
-    title: "Assignment 2 - Docker Checklist",
-    course: "ECE1779",
-    topic: "Docker",
-    tags: ["assignment", "docker"],
-    updatedAt: "2026-03-03",
-  },
-];
+import { MOCK_RESOURCES } from "@/lib/mock-data";
 
 export default function Home() {
+  const [search, setSearch] = useState("");
+
+  const filteredResources = MOCK_RESOURCES.filter((r) =>
+    r.title.toLowerCase().includes(search.toLowerCase()),
+  );
+
   return (
     <div className="space-y-4">
       <div>
@@ -36,6 +28,15 @@ export default function Home() {
         <p className="text-sm text-muted-foreground">
           Browse, search, and download learning materials.
         </p>
+      </div>
+
+      <div className="flex items-center gap-4">
+        <Input
+          placeholder="Search resources..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="max-w-sm"
+        />
       </div>
 
       <div className="border rounded-lg overflow-hidden">
@@ -51,7 +52,7 @@ export default function Home() {
           </TableHeader>
 
           <TableBody>
-            {MOCK.map((r) => (
+            {filteredResources.map((r) => (
               <TableRow key={r.id} className="hover:bg-muted/50">
                 <TableCell className="font-medium">
                   <Link href={`/resources/${r.id}`} className="hover:underline">

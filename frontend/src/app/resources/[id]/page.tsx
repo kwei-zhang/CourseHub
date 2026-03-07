@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { MOCK_RESOURCES } from "@/lib/mock-data";
 
 type Resource = {
   id: string;
@@ -11,36 +12,13 @@ type Resource = {
   description: string;
 };
 
-const MOCK: Resource[] = [
-  {
-    id: "r1",
-    title: "Lecture 1 - Intro to gRPC",
-    course: "ECE1779",
-    topic: "gRPC",
-    tags: ["lecture", "grpc"],
-    updatedAt: "2026-03-01",
-    description:
-      "Introduction to gRPC concepts, services, and communication patterns.",
-  },
-  {
-    id: "r2",
-    title: "Assignment 2 - Docker Checklist",
-    course: "ECE1779",
-    topic: "Docker",
-    tags: ["assignment", "docker"],
-    updatedAt: "2026-03-03",
-    description:
-      "Checklist and requirements for completing the Docker assignment.",
-  },
-];
-
 export default async function ResourceDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const resource = MOCK.find((item) => item.id === id);
+  const resource = MOCK_RESOURCES.find((item) => item.id === id);
 
   if (!resource) {
     return <div className="text-sm text-red-500">Resource not found.</div>;
