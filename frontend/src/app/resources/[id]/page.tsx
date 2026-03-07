@@ -6,6 +6,8 @@ import { getResource } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Resource } from "@/lib/types";
+import { deleteResource } from "@/lib/api";
+import { useRouter } from "next/navigation";
 
 export default function ResourceDetailPage() {
   const params = useParams<{ id: string }>();
@@ -34,7 +36,15 @@ export default function ResourceDetailPage() {
         <div className="flex gap-2">
           <Button variant="outline">Download</Button>
           <Button variant="outline">Edit</Button>
-          <Button variant="destructive">Delete</Button>
+          <Button
+            variant="destructive"
+            onClick={async () => {
+              await deleteResource(resource.id);
+              window.location.href = "/resources";
+            }}
+          >
+            Delete
+          </Button>
         </div>
       </div>
 

@@ -14,3 +14,13 @@ export async function getResource(id: string): Promise<Resource | undefined> {
 export async function createResource(resource: Resource): Promise<void> {
   resources.unshift(resource);
 }
+
+export async function deleteResource(id: string) {
+  const index = MOCK_RESOURCES.findIndex((r) => r.id === id);
+
+  if (index !== -1) {
+    MOCK_RESOURCES.splice(index, 1);
+  }
+
+  return true;
+}
