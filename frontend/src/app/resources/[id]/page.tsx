@@ -59,7 +59,9 @@ export default function ResourceDetailPage() {
 
               const a = document.createElement("a");
               a.href = url;
-              a.download = resource.fileName || `${resource.title}.txt`;
+
+              a.download = `${resource.title}.txt`;
+
               a.click();
 
               URL.revokeObjectURL(url);

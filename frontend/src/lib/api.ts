@@ -15,14 +15,8 @@ export async function createResource(resource: Resource): Promise<void> {
   resources.unshift(resource);
 }
 
-export async function deleteResource(id: string) {
-  const index = MOCK_RESOURCES.findIndex((r) => r.id === id);
-
-  if (index !== -1) {
-    MOCK_RESOURCES.splice(index, 1);
-  }
-
-  return true;
+export async function deleteResource(id: string): Promise<void> {
+  resources = resources.filter((r) => r.id !== id);
 }
 
 export async function updateResource(updatedResource: Resource): Promise<void> {
