@@ -1,14 +1,21 @@
+"use client";
+
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { getResource } from "@/lib/api";
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import { Resource } from "@/lib/types";
 
-export default async function ResourceDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-  const resource = await getResource(id);
+export default function ResourceDetailPage() {
+  const params = useParams<{ id: string }>();
+  const [resource, setResource] = useState<Resource | null>(null);
+
+  useEffect(() => {
+    getResource(params.id).then((data) => {
+      if (data) setResource(data);
+    });
+  }, [params.id]);
 
   if (!resource) {
     return <div className="text-sm text-red-500">Resource not found.</div>;
