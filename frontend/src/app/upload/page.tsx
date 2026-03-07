@@ -31,6 +31,7 @@ export default function UploadPage() {
         .filter(Boolean),
       updatedAt: new Date().toISOString().slice(0, 10),
       description,
+      fileName,
     };
 
     await createResource(newResource);

@@ -44,7 +44,29 @@ export default function ResourceDetailPage() {
         </Link>
 
         <div className="flex gap-2">
-          <Button variant="outline">Download</Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              const content = `Title: ${resource.title}
+                              Course: ${resource.course}
+                              Topic: ${resource.topic}
+                              Tags: ${resource.tags.join(", ")}
+                              Description: ${resource.description}`;
+
+              const blob = new Blob([content], { type: "text/plain" });
+
+              const url = URL.createObjectURL(blob);
+
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = resource.fileName || `${resource.title}.txt`;
+              a.click();
+
+              URL.revokeObjectURL(url);
+            }}
+          >
+            Download
+          </Button>
           <Link href={`/resources/${resource.id}/edit`}>
             <Button variant="outline">Edit</Button>
           </Link>

@@ -6,4 +6,5 @@ export type Resource = {
   tags: string[];
   updatedAt: string;
   description: string;
+  fileName?: string;
 };
