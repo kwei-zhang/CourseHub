@@ -8,6 +8,16 @@ import { useParams } from "next/navigation";
 import { Resource } from "@/lib/types";
 import { deleteResource } from "@/lib/api";
 import { useRouter } from "next/navigation";
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { toast } from "sonner";
 
 export default function ResourceDetailPage() {
   const params = useParams<{ id: string }>();
@@ -36,15 +46,42 @@ export default function ResourceDetailPage() {
         <div className="flex gap-2">
           <Button variant="outline">Download</Button>
           <Button variant="outline">Edit</Button>
-          <Button
-            variant="destructive"
-            onClick={async () => {
-              await deleteResource(resource.id);
-              window.location.href = "/resources";
-            }}
-          >
-            Delete
-          </Button>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="destructive">Delete</Button>
+            </DialogTrigger>
+
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Delete Resource</DialogTitle>
+                <DialogDescription>
+                  Are you sure you want to delete this resource? This action
+                  cannot be undone.
+                </DialogDescription>
+              </DialogHeader>
+
+              <DialogFooter className="flex gap-2">
+                <DialogTrigger asChild>
+                  <Button variant="outline">Cancel</Button>
+                </DialogTrigger>
+
+                <Button
+                  variant="destructive"
+                  onClick={async () => {
+                    await deleteResource(resource.id);
+
+                    toast.success("Resource deleted");
+
+                    setTimeout(() => {
+                      window.location.href = "/resources";
+                    }, 800);
+                  }}
+                >
+                  Delete
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
