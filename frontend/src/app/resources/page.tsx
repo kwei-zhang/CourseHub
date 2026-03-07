@@ -7,6 +7,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
 
 const MOCK = [
   {
@@ -52,7 +53,11 @@ export default function Home() {
           <TableBody>
             {MOCK.map((r) => (
               <TableRow key={r.id} className="hover:bg-muted/50">
-                <TableCell className="font-medium">{r.title}</TableCell>
+                <TableCell className="font-medium">
+                  <Link href={`/resources/${r.id}`} className="hover:underline">
+                    {r.title}
+                  </Link>
+                </TableCell>
                 <TableCell>{r.course}</TableCell>
                 <TableCell>{r.topic}</TableCell>
                 <TableCell className="space-x-1">
