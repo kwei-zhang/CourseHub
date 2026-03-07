@@ -24,3 +24,11 @@ export async function deleteResource(id: string) {
 
   return true;
 }
+
+export async function updateResource(updatedResource: Resource): Promise<void> {
+  const index = resources.findIndex((r) => r.id === updatedResource.id);
+
+  if (index !== -1) {
+    resources[index] = updatedResource;
+  }
+}

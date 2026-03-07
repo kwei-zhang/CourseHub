@@ -45,7 +45,9 @@ export default function ResourceDetailPage() {
 
         <div className="flex gap-2">
           <Button variant="outline">Download</Button>
-          <Button variant="outline">Edit</Button>
+          <Link href={`/resources/${resource.id}/edit`}>
+            <Button variant="outline">Edit</Button>
+          </Link>
           <Dialog>
             <DialogTrigger asChild>
               <Button variant="destructive">Delete</Button>
