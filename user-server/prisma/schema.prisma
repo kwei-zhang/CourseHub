@@ -9,14 +9,102 @@ datasource db {
 }
 
 model User {
-  id            String   @id @default(cuid())
+  id            String     @id @default(cuid())
   name          String
-  email         String   @unique
-  emailVerified Boolean  @default(false)
+  email         String     @unique
+  emailVerified Boolean    @default(false)
   image         String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  role          String   @default("user")
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  role          String     @default("user")
+  sessions      Session[]
+  accounts      Account[]
+  resources     Resource[]
 
   @@map("user")
+}
+
+enum VisibilityPolicy {
+  LECTURE
+  ASSIGNMENT
+  EXAM
+  SOLUTION
+  HIGHLY_SENSITIVE
+}
+
+model Resource {
+  id          String           @id @default(cuid())
+  title       String
+  courseCode  String
+  topic       String?
+  instructor  String?
+  uploadDate  DateTime         @default(now())
+  tags        String[]         @default([])
+  contentType String
+  objectKey   String           @unique
+  policy      VisibilityPolicy @default(LECTURE)
+
+  uploaderId String
+  uploader   User   @relation(fields: [uploaderId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("resource")
+}
+
+model AccessLog {
+  id         String   @id @default(cuid())
+  userId     String
+  resourceId String
+  action     String // "UPLOAD" | "DOWNLOAD" | "DENIED" etc.
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([resourceId])
+  @@map("access_log")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@map("account")
+}
+
+model Verification {
+  id         String    @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime?
+  updatedAt  DateTime?
+
+  @@map("verification")
 }
