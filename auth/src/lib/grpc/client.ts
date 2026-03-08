@@ -22,6 +22,7 @@ const proto = (grpc.loadPackageDefinition(packageDefinition) as unknown as { ece
   .ece1779;
 
 const userTarget = process.env.USER_SERVER ?? "localhost:5001";
+const resourceTarget = process.env.RESOURCE_SERVER ?? userTarget;
 const fileTarget = process.env.FILE_SERVER ?? "localhost:5002";
 const systemTarget = process.env.SYSTEM_SERVER ?? "localhost:5003";
 
@@ -31,6 +32,10 @@ export const userClient = new (proto.UserService as grpc.ServiceClientConstructo
 );
 export const fileClient = new (proto.FileService as grpc.ServiceClientConstructor)(
   fileTarget,
+  grpc.credentials.createInsecure()
+);
+export const resourceClient = new (proto.ResourceService as grpc.ServiceClientConstructor)(
+  resourceTarget,
   grpc.credentials.createInsecure()
 );
 export const systemClient = new (proto.SystemService as grpc.ServiceClientConstructor)(

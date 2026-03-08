@@ -3,7 +3,7 @@
  * Import from here for backward compatibility, or from ./user, ./file, ./system for direct access.
  */
 
-export { userClient, fileClient, systemClient } from "./client";
+export { userClient, resourceClient, fileClient, systemClient } from "./client";
 export {
   userGet,
   userGetUser,
@@ -12,6 +12,14 @@ export {
   userSearchUsersByName,
   userGetUserByEmail,
 } from "./user";
+export {
+  resourceCreateResource,
+  resourceGetResource,
+  resourceListResources,
+  resourceUpdateResource,
+  resourceDeleteResource,
+  resourceRecordAccessLog,
+} from "./resource";
 export { fileGet, fileGetUploadUrl, fileGetDownloadUrl } from "./file";
 export { systemGet } from "./system";
 export type {
@@ -20,6 +28,16 @@ export type {
   GetUploadUrlResponse,
   GetDownloadUrlRequest,
   GetDownloadUrlResponse,
+  ResourceResponse,
+  CreateResourceRequest,
+  GetResourceRequest,
+  ListResourcesRequest,
+  ListResourcesResponse,
+  UpdateResourceRequest,
+  DeleteResourceRequest,
+  DeleteResourceResponse,
+  RecordAccessLogRequest,
+  RecordAccessLogResponse,
   GetUserResponse,
   UpdateUserRequest,
   DeleteUserResponse,
