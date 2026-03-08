@@ -3,6 +3,35 @@ import type grpc from "@grpc/grpc-js";
 /** Response shape from user/file/system get RPCs. */
 export type GetResponse = { message: string };
 
+/** Request payload for FileService.GetUploadUrl. */
+export type GetUploadUrlRequest = {
+  title?: string;
+  courseCode: string;
+  contentType: string;
+  policy: string;
+  tags?: string[];
+  uploaderId: string;
+  expires_in?: number;
+};
+
+/** Response payload from FileService.GetUploadUrl. */
+export type GetUploadUrlResponse = {
+  url: string;
+  object_key: string;
+};
+
+/** Request payload for FileService.GetDownloadUrl. */
+export type GetDownloadUrlRequest = {
+  resource_id: string;
+  expires_in?: number;
+  requester_user_id: string;
+};
+
+/** Response payload from FileService.GetDownloadUrl. */
+export type GetDownloadUrlResponse = {
+  url: string;
+};
+
 /** Response shape from UserService.GetUser / UpdateUser RPC. */
 export type GetUserResponse = {
   id: string;

@@ -1,8 +1,12 @@
 import { describe, it, mock } from "node:test";
 import assert from "node:assert";
 import type { Request, Response, NextFunction } from "express";
+import type { Router } from "express";
+import grpc from "@grpc/grpc-js";
 import { isRole, type AuthUser, type Role } from "../src/types/auth";
 import { requireRole } from "../src/middleware/auth";
+import fileProxyRouter from "../src/routes/proxy/file";
+import { fileClient } from "../src/lib/grpc/client";
 
 describe("isRole", () => {
   it("returns true for valid roles", () => {
@@ -79,5 +83,139 @@ describe("requireRole", () => {
 
     assert.strictEqual(next.mock.calls.length, 0);
     assert.deepStrictEqual((res.status as ReturnType<typeof mock.fn>).mock.calls[0]?.arguments, [401]);
+  });
+});
+
+describe("file proxy routes", () => {
+  type RouteHandler = (req: Request, res: Response, next: NextFunction) => unknown;
+
+  function getRouteHandler(router: Router, method: "post", path: string): RouteHandler {
+    const stack = (router as unknown as { stack?: Array<{ route?: { path?: string; methods?: Record<string, boolean>; stack?: Array<{ handle: RouteHandler }> } }> }).stack ?? [];
+    const layer = stack.find((entry) => entry.route?.path === path && entry.route?.methods?.[method]);
+    if (!layer?.route?.stack?.[0]?.handle) {
+      throw new Error(`Route handler not found for ${method.toUpperCase()} ${path}`);
+    }
+    return layer.route.stack[0].handle;
+  }
+
+  function mockReqWithUser(body: Record<string, unknown>, userId = "user-1"): Request {
+    return {
+      body,
+      user: {
+        id: userId,
+        email: "user@example.com",
+        name: "User",
+        role: "user" as Role,
+      },
+    } as Request;
+  }
+
+  function mockRes() {
+    const res = {} as Response;
+    res.status = mock.fn(() => res);
+    res.json = mock.fn(() => res);
+    return res;
+  }
+
+  it("POST /upload-url returns upload URL and object key", async () => {
+    const handler = getRouteHandler(fileProxyRouter, "post", "/upload-url");
+    const req = mockReqWithUser({
+      title: "Week 1 Slides",
+      courseCode: "ECE1779",
+      contentType: "application/pdf",
+      policy: "LECTURE",
+      tags: ["week1"],
+      expires_in: 120,
+    });
+    const res = mockRes() as Response;
+
+    const original = fileClient.getUploadUrl;
+    fileClient.getUploadUrl = ((request: Record<string, unknown>, _md: grpc.Metadata, cb: (err: Error | null, res?: { url: string; object_key: string }) => void) => {
+      cb(null, { url: "https://upload.example", object_key: "obj/key.pdf" });
+    }) as typeof fileClient.getUploadUrl;
+
+    try {
+      await handler(req, res, (() => {}) as NextFunction);
+    } finally {
+      fileClient.getUploadUrl = original;
+    }
+
+    assert.strictEqual((res.status as ReturnType<typeof mock.fn>).mock.calls.length, 0);
+    assert.deepStrictEqual((res.json as ReturnType<typeof mock.fn>).mock.calls[0]?.arguments[0], {
+      url: "https://upload.example",
+      object_key: "obj/key.pdf",
+    });
+  });
+
+  it("POST /upload-url returns 400 for INVALID_ARGUMENT", async () => {
+    const handler = getRouteHandler(fileProxyRouter, "post", "/upload-url");
+    const req = mockReqWithUser({
+      courseCode: "ECE1779",
+      contentType: "application/pdf",
+      policy: "INVALID_POLICY",
+    });
+    const res = mockRes() as Response;
+
+    const original = fileClient.getUploadUrl;
+    fileClient.getUploadUrl = ((_request: Record<string, unknown>, _md: grpc.Metadata, cb: (err: Error | null) => void) => {
+      const err = Object.assign(new Error("Invalid policy"), { code: grpc.status.INVALID_ARGUMENT });
+      cb(err);
+    }) as typeof fileClient.getUploadUrl;
+
+    try {
+      await handler(req, res, (() => {}) as NextFunction);
+    } finally {
+      fileClient.getUploadUrl = original;
+    }
+
+    assert.deepStrictEqual((res.status as ReturnType<typeof mock.fn>).mock.calls[0]?.arguments, [400]);
+    assert.deepStrictEqual((res.json as ReturnType<typeof mock.fn>).mock.calls[0]?.arguments[0], {
+      error: "Invalid policy",
+    });
+  });
+
+  it("POST /download-url returns download URL", async () => {
+    const handler = getRouteHandler(fileProxyRouter, "post", "/download-url");
+    const req = mockReqWithUser({ resource_id: "res-1", expires_in: 180 });
+    const res = mockRes() as Response;
+
+    const original = fileClient.getDownloadUrl;
+    fileClient.getDownloadUrl = ((_request: Record<string, unknown>, _md: grpc.Metadata, cb: (err: Error | null, res?: { url: string }) => void) => {
+      cb(null, { url: "https://download.example" });
+    }) as typeof fileClient.getDownloadUrl;
+
+    try {
+      await handler(req, res, (() => {}) as NextFunction);
+    } finally {
+      fileClient.getDownloadUrl = original;
+    }
+
+    assert.strictEqual((res.status as ReturnType<typeof mock.fn>).mock.calls.length, 0);
+    assert.deepStrictEqual((res.json as ReturnType<typeof mock.fn>).mock.calls[0]?.arguments[0], {
+      url: "https://download.example",
+    });
+  });
+
+  it("POST /download-url returns 404 for NOT_FOUND", async () => {
+    const handler = getRouteHandler(fileProxyRouter, "post", "/download-url");
+    const req = mockReqWithUser({ resource_id: "missing-resource" });
+    const res = mockRes() as Response;
+
+    const original = fileClient.getDownloadUrl;
+    fileClient.getDownloadUrl = ((_request: Record<string, unknown>, _md: grpc.Metadata, cb: (err: Error | null) => void) => {
+      const err = Object.assign(new Error("Resource object key not found"), { code: grpc.status.NOT_FOUND });
+      cb(err);
+    }) as typeof fileClient.getDownloadUrl;
+
+    try {
+      await handler(req, res, (() => {}) as NextFunction);
+    } finally {
+      fileClient.getDownloadUrl = original;
+    }
+
+    assert.deepStrictEqual((res.status as ReturnType<typeof mock.fn>).mock.calls[0]?.arguments, [404]);
+    assert.deepStrictEqual((res.json as ReturnType<typeof mock.fn>).mock.calls[0]?.arguments[0], {
+      error: "Resource object key not found",
+    });
   });
 });

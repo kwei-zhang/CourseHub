@@ -12,10 +12,14 @@ export {
   userSearchUsersByName,
   userGetUserByEmail,
 } from "./user";
-export { fileGet } from "./file";
+export { fileGet, fileGetUploadUrl, fileGetDownloadUrl } from "./file";
 export { systemGet } from "./system";
 export type {
   GetResponse,
+  GetUploadUrlRequest,
+  GetUploadUrlResponse,
+  GetDownloadUrlRequest,
+  GetDownloadUrlResponse,
   GetUserResponse,
   UpdateUserRequest,
   DeleteUserResponse,
