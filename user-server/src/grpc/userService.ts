@@ -9,6 +9,8 @@ import type {
   SearchUsersByNameRequest,
   SearchUsersByNameResponse,
   UpdateUserRequest,
+  CheckEnrollmentRequest,
+  CheckEnrollmentResponse,
 } from "../types";
 
 function mapUserToGrpcResponse(user: User): GetUserGrpcResponse {
@@ -206,6 +208,52 @@ function getUserByEmailHandler(
     });
 }
 
+function checkEnrollmentHandler(
+  call: grpc.ServerUnaryCall<CheckEnrollmentRequest, CheckEnrollmentResponse>,
+  callback: grpc.sendUnaryData<CheckEnrollmentResponse>
+): void {
+  const { user_id, course_code } = call.request;
+  if (!user_id || !course_code) {
+    callback(
+      { code: grpc.status.INVALID_ARGUMENT, message: "user_id and course_code are required" },
+      undefined
+    );
+    return;
+  }
+  if (!prisma) {
+    callback(
+      { code: grpc.status.UNAVAILABLE, message: "Database not configured" },
+      undefined
+    );
+    return;
+  }
+
+  prisma.course
+    .findUnique({
+      where: { code: course_code },
+      include: { enrollments: { where: { userId: user_id } } },
+    })
+    .then((course) => {
+      if (!course) {
+        callback(null, { is_enrolled: false, role: "" });
+        return;
+      }
+      const enrollment = course.enrollments[0];
+      if (!enrollment) {
+        callback(null, { is_enrolled: false, role: "" });
+        return;
+      }
+      callback(null, { is_enrolled: true, role: enrollment.role });
+    })
+    .catch((err) => {
+      console.error("CheckEnrollment error:", err);
+      callback(
+        { code: grpc.status.INTERNAL, message: err instanceof Error ? err.message : "Database error" },
+        undefined
+      );
+    });
+}
+
 export const userServiceHandlers = {
   get,
   getUser,
@@ -213,4 +261,5 @@ export const userServiceHandlers = {
   deleteUser: deleteUserHandler,
   searchUsersByName: searchUsersByNameHandler,
   getUserByEmail: getUserByEmailHandler,
+  checkEnrollment: checkEnrollmentHandler,
 };

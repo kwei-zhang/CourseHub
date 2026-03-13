@@ -1,12 +1,12 @@
 const grpc = require("@grpc/grpc-js");
 const { buildObjectKey } = require("../services/objectKey");
-const { isValidPolicy, canIssueDownload } = require("../services/policy");
+const { VisibilityPolicy } = require("@prisma/client");
 
 function createFileServiceHandlers({
   presignUpload,
   presignDownload,
   getResourceById,
-  getUserById,
+  checkEnrollment,
   recordAccessLog,
 }) {
   async function safeRecordAccessLog(payload) {
@@ -46,10 +46,11 @@ function createFileServiceHandlers({
       return;
     }
 
-    if (!isValidPolicy(policy)) {
+    const normalizedPolicy = policy?.trim().toUpperCase();
+    if (!normalizedPolicy || !(normalizedPolicy in VisibilityPolicy)) {
       fail(
         grpc.status.INVALID_ARGUMENT,
-        "Invalid policy. Allowed values: LECTURE, ASSIGNMENT, EXAM, SOLUTION, HIGHLY_SENSITIVE"
+        `Invalid policy. Allowed values: ${Object.keys(VisibilityPolicy).join(", ")}`
       );
       return;
     }
@@ -110,14 +111,31 @@ function createFileServiceHandlers({
         return;
       }
 
-      const requester = await getUserById(requesterUserId);
-      const authz = canIssueDownload(resource.policy, requester?.role);
-      if (!authz.allowed) {
-        fail(grpc.status.PERMISSION_DENIED, authz.message, `policy=${resource.policy} role=${requester?.role || ""}`);
-        return;
-      }
+      if (resource.policy !== VisibilityPolicy.LECTURE && resource.policy !== VisibilityPolicy.ASSIGNMENT) {
+        // Enforce course enrollment check
+        if (typeof checkEnrollment !== "function") {
+           fail(grpc.status.INTERNAL, "Enrollment checking is unavailable");
+           return;
+        }
+        
+        const enrollment = await checkEnrollment(requesterUserId, resource.courseCode);
+        if (!enrollment?.is_enrolled) {
+          fail(grpc.status.PERMISSION_DENIED, `Not enrolled in course ${resource.courseCode}`);
+          return;
+        }
 
-      const url = await presignDownload({ objectKey: resource.objectKey, expiresIn: expiresIn || 300 });
+        if (resource.policy === VisibilityPolicy.HIGHLY_SENSITIVE) {
+           fail(grpc.status.PERMISSION_DENIED, "Download is not allowed for highly sensitive policies");
+           return;
+        }
+        
+        if (resource.policy === VisibilityPolicy.EXAM || resource.policy === VisibilityPolicy.SOLUTION) {
+           if (enrollment.role !== "ta" && enrollment.role !== "instructor") {
+             fail(grpc.status.PERMISSION_DENIED, `Download for policy ${resource.policy} requires TA or Instructor role`);
+             return;
+           }
+        }
+      }      const url = await presignDownload({ objectKey: resource.objectKey, expiresIn: expiresIn || 300 });
       safeRecordAccessLog({
         userId: requesterUserId,
         resourceId,

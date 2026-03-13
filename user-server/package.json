@@ -5,6 +5,7 @@
   "main": "src/index.ts",
   "scripts": {
     "start": "tsx src/index.ts",
+    "test": "node --test --import tsx test/userService.test.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {

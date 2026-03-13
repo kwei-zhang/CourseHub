@@ -6,7 +6,7 @@ COPY proto /app/proto
 COPY file-server /app/file-server
 
 WORKDIR /app/file-server
-RUN npm install --production
+RUN npm install && npx prisma generate
 
 ENV NODE_ENV=production
 EXPOSE 5002

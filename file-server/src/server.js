@@ -4,6 +4,8 @@ const protoLoader = require("@grpc/proto-loader");
 const { presignUpload, presignDownload } = require("../spaces");
 const { createUserServerClients } = require("./clients/userServer");
 const { createFileServiceHandlers } = require("./handlers/fileService");
+const { createResourceServiceHandlers } = require("./handlers/resourceService");
+const { prisma } = require("./lib/prisma");
 
 const PROTO_PATH = process.env.PROTO_PATH || path.join(__dirname, "../../proto/services.proto");
 const PORT = process.env.PORT || 5002;
@@ -20,17 +22,20 @@ const proto = grpc.loadPackageDefinition(packageDefinition).ece1779;
 
 function createServer() {
   const clients = createUserServerClients(proto, USER_SERVER_TARGET);
-  const handlers = createFileServiceHandlers({
+  const fileHandlers = createFileServiceHandlers({
     presignUpload,
     presignDownload,
-    getResourceById: clients.getResourceById,
-    getUserById: clients.getUserById,
-    recordAccessLog: clients.recordAccessLog,
+    getResourceById: (id) => prisma.resource.findUnique({ where: { id } }),
+    checkEnrollment: clients.checkEnrollment,
+    recordAccessLog: ({ userId, resourceId, action }) => 
+      prisma.accessLog.create({ data: { userId, resourceId, action } }),
   });
+  const resourceHandlers = createResourceServiceHandlers();
 
   const server = new grpc.Server();
-  server.addService(proto.FileService.service, handlers);
-  return { server, handlers };
+  server.addService(proto.FileService.service, fileHandlers);
+  server.addService(proto.ResourceService.service, resourceHandlers);
+  return { server, handlers: fileHandlers };
 }
 
 function startServer(port = PORT) {

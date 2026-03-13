@@ -7,7 +7,8 @@ import { isRole, type AuthUser, type Role } from "../src/types/auth";
 import { requireRole } from "../src/middleware/auth";
 import fileProxyRouter from "../src/routes/proxy/file";
 import resourceProxyRouter from "../src/routes/proxy/resource";
-import { fileClient, resourceClient } from "../src/lib/grpc/client";
+import userProxyRouter from "../src/routes/proxy/user";
+import { fileClient, resourceClient, userClient } from "../src/lib/grpc/client";
 
 describe("isRole", () => {
   it("returns true for valid roles", () => {
@@ -136,7 +137,7 @@ describe("file proxy routes", () => {
     }) as typeof fileClient.getUploadUrl;
 
     try {
-      await handler(req, res, (() => {}) as NextFunction);
+      await handler(req, res, (() => { }) as NextFunction);
     } finally {
       fileClient.getUploadUrl = original;
     }
@@ -164,7 +165,7 @@ describe("file proxy routes", () => {
     }) as typeof fileClient.getUploadUrl;
 
     try {
-      await handler(req, res, (() => {}) as NextFunction);
+      await handler(req, res, (() => { }) as NextFunction);
     } finally {
       fileClient.getUploadUrl = original;
     }
@@ -186,7 +187,7 @@ describe("file proxy routes", () => {
     }) as typeof fileClient.getDownloadUrl;
 
     try {
-      await handler(req, res, (() => {}) as NextFunction);
+      await handler(req, res, (() => { }) as NextFunction);
     } finally {
       fileClient.getDownloadUrl = original;
     }
@@ -209,7 +210,7 @@ describe("file proxy routes", () => {
     }) as typeof fileClient.getDownloadUrl;
 
     try {
-      await handler(req, res, (() => {}) as NextFunction);
+      await handler(req, res, (() => { }) as NextFunction);
     } finally {
       fileClient.getDownloadUrl = original;
     }
@@ -297,7 +298,7 @@ describe("resource proxy routes", () => {
     }) as typeof resourceClient.createResource;
 
     try {
-      await handler(req, res, (() => {}) as NextFunction);
+      await handler(req, res, (() => { }) as NextFunction);
     } finally {
       resourceClient.createResource = original;
     }
@@ -317,7 +318,7 @@ describe("resource proxy routes", () => {
     }) as typeof resourceClient.listResources;
 
     try {
-      await handler(req, res, (() => {}) as NextFunction);
+      await handler(req, res, (() => { }) as NextFunction);
     } finally {
       resourceClient.listResources = original;
     }
@@ -339,7 +340,7 @@ describe("resource proxy routes", () => {
     }) as typeof resourceClient.getResource;
 
     try {
-      await handler(req, res, (() => {}) as NextFunction);
+      await handler(req, res, (() => { }) as NextFunction);
     } finally {
       resourceClient.getResource = original;
     }
@@ -364,7 +365,7 @@ describe("resource proxy routes", () => {
     }) as typeof resourceClient.updateResource;
 
     try {
-      await handler(req, res, (() => {}) as NextFunction);
+      await handler(req, res, (() => { }) as NextFunction);
     } finally {
       resourceClient.updateResource = original;
     }
@@ -383,7 +384,7 @@ describe("resource proxy routes", () => {
     }) as typeof resourceClient.deleteResource;
 
     try {
-      await handler(req, res, (() => {}) as NextFunction);
+      await handler(req, res, (() => { }) as NextFunction);
     } finally {
       resourceClient.deleteResource = original;
     }
@@ -413,7 +414,7 @@ describe("resource proxy routes", () => {
     }) as typeof resourceClient.recordAccessLog;
 
     try {
-      await handler(req, res, (() => {}) as NextFunction);
+      await handler(req, res, (() => { }) as NextFunction);
     } finally {
       resourceClient.recordAccessLog = original;
     }
@@ -422,5 +423,400 @@ describe("resource proxy routes", () => {
     assert.deepStrictEqual((res.json as ReturnType<typeof mock.fn>).mock.calls[0]?.arguments[0], {
       error: "userId and resourceId are required",
     });
+  });
+});
+
+describe("user proxy routes", () => {
+  type RouteHandler = (req: Request, res: Response, next: NextFunction) => unknown;
+
+  function getRouteHandler(
+    router: Router,
+    method: "get" | "put" | "delete",
+    path: string
+  ): RouteHandler {
+    const stack = (
+      router as unknown as {
+        stack?: Array<{
+          route?: {
+            path?: string;
+            methods?: Record<string, boolean>;
+            stack?: Array<{ handle: RouteHandler }>;
+          };
+        }>;
+      }
+    ).stack ?? [];
+    const layer = stack.find(
+      (entry) => entry.route?.path === path && entry.route?.methods?.[method]
+    );
+    if (!layer?.route?.stack?.[0]?.handle) {
+      throw new Error(`Route handler not found for ${method.toUpperCase()} ${path}`);
+    }
+    return layer.route.stack[0].handle;
+  }
+
+  function mockReqWithUser({
+    body = {},
+    query = {},
+    params = {},
+    userId = "user-1",
+  }: {
+    body?: Record<string, unknown>;
+    query?: Record<string, unknown>;
+    params?: Record<string, string>;
+    userId?: string;
+  }): Request {
+    return {
+      body,
+      query,
+      params,
+      user: {
+        id: userId,
+        email: "user@example.com",
+        name: "User",
+        role: "user" as Role,
+      },
+    } as Request;
+  }
+
+  function mockRes() {
+    const res = {} as Response;
+    res.status = mock.fn(() => res);
+    res.json = mock.fn(() => res);
+    return res;
+  }
+
+  const fakeUser = {
+    id: "user-1",
+    name: "Alice",
+    email: "alice@example.com",
+    email_verified: true,
+    image: "",
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    role: "user",
+  };
+
+  // GET /get ──────────────────────────────────────────────────────────────────
+
+  it("GET /get returns hello message", async () => {
+    const handler = getRouteHandler(userProxyRouter, "get", "/get");
+    const req = mockReqWithUser({});
+    const res = mockRes() as Response;
+
+    const original = userClient.get;
+    userClient.get = ((_req: unknown, _md: grpc.Metadata, cb: (err: Error | null, res?: { message: string }) => void) => {
+      cb(null, { message: "hello" });
+    }) as typeof userClient.get;
+
+    try {
+      await handler(req, res, (() => { }) as NextFunction);
+    } finally {
+      userClient.get = original;
+    }
+
+    assert.strictEqual((res.status as ReturnType<typeof mock.fn>).mock.calls.length, 0);
+    assert.deepStrictEqual(
+      (res.json as ReturnType<typeof mock.fn>).mock.calls[0]?.arguments[0],
+      { message: "hello" }
+    );
+  });
+
+  it("GET /get returns 502 on gRPC error", async () => {
+    const handler = getRouteHandler(userProxyRouter, "get", "/get");
+    const req = mockReqWithUser({});
+    const res = mockRes() as Response;
+
+    const original = userClient.get;
+    userClient.get = ((_req: unknown, _md: grpc.Metadata, cb: (err: Error | null) => void) => {
+      cb(new Error("unavailable"));
+    }) as typeof userClient.get;
+
+    try {
+      await handler(req, res, (() => { }) as NextFunction);
+    } finally {
+      userClient.get = original;
+    }
+
+    assert.deepStrictEqual(
+      (res.status as ReturnType<typeof mock.fn>).mock.calls[0]?.arguments,
+      [502]
+    );
+  });
+
+  // GET /search ───────────────────────────────────────────────────────────────
+
+  it("GET /search returns matching users", async () => {
+    const handler = getRouteHandler(userProxyRouter, "get", "/search");
+    const req = mockReqWithUser({ query: { name: "Alice" } });
+    const res = mockRes() as Response;
+
+    const original = userClient.searchUsersByName;
+    userClient.searchUsersByName = ((_req: unknown, _md: grpc.Metadata, cb: (err: Error | null, res?: { users: typeof fakeUser[] }) => void) => {
+      cb(null, { users: [fakeUser] });
+    }) as typeof userClient.searchUsersByName;
+
+    try {
+      await handler(req, res, (() => { }) as NextFunction);
+    } finally {
+      userClient.searchUsersByName = original;
+    }
+
+    const result = (res.json as ReturnType<typeof mock.fn>).mock.calls[0]?.arguments[0] as { users: typeof fakeUser[] };
+    assert.strictEqual(result.users.length, 1);
+    assert.strictEqual(result.users[0]?.name, "Alice");
+  });
+
+  it("GET /search returns 502 on gRPC error", async () => {
+    const handler = getRouteHandler(userProxyRouter, "get", "/search");
+    const req = mockReqWithUser({ query: { name: "Alice" } });
+    const res = mockRes() as Response;
+
+    const original = userClient.searchUsersByName;
+    userClient.searchUsersByName = ((_req: unknown, _md: grpc.Metadata, cb: (err: Error | null) => void) => {
+      cb(new Error("error"));
+    }) as typeof userClient.searchUsersByName;
+
+    try {
+      await handler(req, res, (() => { }) as NextFunction);
+    } finally {
+      userClient.searchUsersByName = original;
+    }
+
+    assert.deepStrictEqual(
+      (res.status as ReturnType<typeof mock.fn>).mock.calls[0]?.arguments,
+      [502]
+    );
+  });
+
+  // GET /by-email ─────────────────────────────────────────────────────────────
+
+  it("GET /by-email returns 400 when email query is missing", async () => {
+    const handler = getRouteHandler(userProxyRouter, "get", "/by-email");
+    const req = mockReqWithUser({ query: {} });
+    const res = mockRes() as Response;
+
+    await handler(req, res, (() => { }) as NextFunction);
+
+    assert.deepStrictEqual(
+      (res.status as ReturnType<typeof mock.fn>).mock.calls[0]?.arguments,
+      [400]
+    );
+    assert.deepStrictEqual(
+      (res.json as ReturnType<typeof mock.fn>).mock.calls[0]?.arguments[0],
+      { error: "email query is required" }
+    );
+  });
+
+  it("GET /by-email returns user when found", async () => {
+    const handler = getRouteHandler(userProxyRouter, "get", "/by-email");
+    const req = mockReqWithUser({ query: { email: "alice@example.com" } });
+    const res = mockRes() as Response;
+
+    const original = userClient.getUserByEmail;
+    userClient.getUserByEmail = ((_req: unknown, _md: grpc.Metadata, cb: (err: Error | null, res?: { user?: typeof fakeUser }) => void) => {
+      cb(null, { user: fakeUser });
+    }) as typeof userClient.getUserByEmail;
+
+    try {
+      await handler(req, res, (() => { }) as NextFunction);
+    } finally {
+      userClient.getUserByEmail = original;
+    }
+
+    const result = (res.json as ReturnType<typeof mock.fn>).mock.calls[0]?.arguments[0] as { user?: typeof fakeUser };
+    assert.strictEqual(result.user?.email, "alice@example.com");
+  });
+
+  it("GET /by-email returns { user: null } when not found", async () => {
+    const handler = getRouteHandler(userProxyRouter, "get", "/by-email");
+    const req = mockReqWithUser({ query: { email: "missing@example.com" } });
+    const res = mockRes() as Response;
+
+    const original = userClient.getUserByEmail;
+    userClient.getUserByEmail = ((_req: unknown, _md: grpc.Metadata, cb: (err: Error | null, res?: { user?: typeof fakeUser }) => void) => {
+      cb(null, {});
+    }) as typeof userClient.getUserByEmail;
+
+    try {
+      await handler(req, res, (() => { }) as NextFunction);
+    } finally {
+      userClient.getUserByEmail = original;
+    }
+
+    assert.deepStrictEqual(
+      (res.json as ReturnType<typeof mock.fn>).mock.calls[0]?.arguments[0],
+      { user: null }
+    );
+  });
+
+  // GET /:userId ──────────────────────────────────────────────────────────────
+
+  it("GET /:userId returns the user", async () => {
+    const handler = getRouteHandler(userProxyRouter, "get", "/:userId");
+    const req = mockReqWithUser({ params: { userId: "user-1" } });
+    const res = mockRes() as Response;
+
+    const original = userClient.getUser;
+    userClient.getUser = ((_req: unknown, _md: grpc.Metadata, cb: (err: Error | null, res?: typeof fakeUser) => void) => {
+      cb(null, fakeUser);
+    }) as typeof userClient.getUser;
+
+    try {
+      await handler(req, res, (() => { }) as NextFunction);
+    } finally {
+      userClient.getUser = original;
+    }
+
+    assert.strictEqual((res.status as ReturnType<typeof mock.fn>).mock.calls.length, 0);
+    const result = (res.json as ReturnType<typeof mock.fn>).mock.calls[0]?.arguments[0] as typeof fakeUser;
+    assert.strictEqual(result.id, "user-1");
+  });
+
+  it("GET /:userId returns 404 when user not found", async () => {
+    const handler = getRouteHandler(userProxyRouter, "get", "/:userId");
+    const req = mockReqWithUser({ params: { userId: "missing" } });
+    const res = mockRes() as Response;
+
+    const original = userClient.getUser;
+    userClient.getUser = ((_req: unknown, _md: grpc.Metadata, cb: (err: Error | null) => void) => {
+      const err = Object.assign(new Error("User not found"), { code: grpc.status.NOT_FOUND });
+      cb(err);
+    }) as typeof userClient.getUser;
+
+    try {
+      await handler(req, res, (() => { }) as NextFunction);
+    } finally {
+      userClient.getUser = original;
+    }
+
+    assert.deepStrictEqual(
+      (res.status as ReturnType<typeof mock.fn>).mock.calls[0]?.arguments,
+      [404]
+    );
+    assert.deepStrictEqual(
+      (res.json as ReturnType<typeof mock.fn>).mock.calls[0]?.arguments[0],
+      { error: "User not found" }
+    );
+  });
+
+  it("GET /:userId returns 502 on unexpected gRPC error", async () => {
+    const handler = getRouteHandler(userProxyRouter, "get", "/:userId");
+    const req = mockReqWithUser({ params: { userId: "user-1" } });
+    const res = mockRes() as Response;
+
+    const original = userClient.getUser;
+    userClient.getUser = ((_req: unknown, _md: grpc.Metadata, cb: (err: Error | null) => void) => {
+      cb(new Error("internal error"));
+    }) as typeof userClient.getUser;
+
+    try {
+      await handler(req, res, (() => { }) as NextFunction);
+    } finally {
+      userClient.getUser = original;
+    }
+
+    assert.deepStrictEqual(
+      (res.status as ReturnType<typeof mock.fn>).mock.calls[0]?.arguments,
+      [502]
+    );
+  });
+
+  // PUT /:userId ──────────────────────────────────────────────────────────────
+
+  it("PUT /:userId updates and returns the user", async () => {
+    const handler = getRouteHandler(userProxyRouter, "put", "/:userId");
+    const req = mockReqWithUser({
+      params: { userId: "user-1" },
+      body: { name: "Alice Updated" },
+    });
+    const res = mockRes() as Response;
+
+    const original = userClient.updateUser;
+    userClient.updateUser = ((_req: unknown, _md: grpc.Metadata, cb: (err: Error | null, res?: typeof fakeUser) => void) => {
+      cb(null, { ...fakeUser, name: "Alice Updated" });
+    }) as typeof userClient.updateUser;
+
+    try {
+      await handler(req, res, (() => { }) as NextFunction);
+    } finally {
+      userClient.updateUser = original;
+    }
+
+    assert.strictEqual((res.status as ReturnType<typeof mock.fn>).mock.calls.length, 0);
+    const result = (res.json as ReturnType<typeof mock.fn>).mock.calls[0]?.arguments[0] as typeof fakeUser;
+    assert.strictEqual(result.name, "Alice Updated");
+  });
+
+  it("PUT /:userId returns 404 when user not found", async () => {
+    const handler = getRouteHandler(userProxyRouter, "put", "/:userId");
+    const req = mockReqWithUser({
+      params: { userId: "missing" },
+      body: { name: "Ghost" },
+    });
+    const res = mockRes() as Response;
+
+    const original = userClient.updateUser;
+    userClient.updateUser = ((_req: unknown, _md: grpc.Metadata, cb: (err: Error | null) => void) => {
+      const err = Object.assign(new Error("User not found"), { code: grpc.status.NOT_FOUND });
+      cb(err);
+    }) as typeof userClient.updateUser;
+
+    try {
+      await handler(req, res, (() => { }) as NextFunction);
+    } finally {
+      userClient.updateUser = original;
+    }
+
+    assert.deepStrictEqual(
+      (res.status as ReturnType<typeof mock.fn>).mock.calls[0]?.arguments,
+      [404]
+    );
+  });
+
+  // DELETE /:userId ───────────────────────────────────────────────────────────
+
+  it("DELETE /:userId returns ok: true on success", async () => {
+    const handler = getRouteHandler(userProxyRouter, "delete", "/:userId");
+    const req = mockReqWithUser({ params: { userId: "user-1" } });
+    const res = mockRes() as Response;
+
+    const original = userClient.deleteUser;
+    userClient.deleteUser = ((_req: unknown, _md: grpc.Metadata, cb: (err: Error | null, res?: { ok: boolean }) => void) => {
+      cb(null, { ok: true });
+    }) as typeof userClient.deleteUser;
+
+    try {
+      await handler(req, res, (() => { }) as NextFunction);
+    } finally {
+      userClient.deleteUser = original;
+    }
+
+    assert.strictEqual((res.status as ReturnType<typeof mock.fn>).mock.calls.length, 0);
+    assert.deepStrictEqual(
+      (res.json as ReturnType<typeof mock.fn>).mock.calls[0]?.arguments[0],
+      { ok: true }
+    );
+  });
+
+  it("DELETE /:userId returns 502 on gRPC error", async () => {
+    const handler = getRouteHandler(userProxyRouter, "delete", "/:userId");
+    const req = mockReqWithUser({ params: { userId: "user-1" } });
+    const res = mockRes() as Response;
+
+    const original = userClient.deleteUser;
+    userClient.deleteUser = ((_req: unknown, _md: grpc.Metadata, cb: (err: Error | null) => void) => {
+      cb(new Error("error"));
+    }) as typeof userClient.deleteUser;
+
+    try {
+      await handler(req, res, (() => { }) as NextFunction);
+    } finally {
+      userClient.deleteUser = original;
+    }
+
+    assert.deepStrictEqual(
+      (res.status as ReturnType<typeof mock.fn>).mock.calls[0]?.arguments,
+      [502]
+    );
   });
 });

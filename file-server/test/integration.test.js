@@ -84,29 +84,19 @@ function startMockUserServer(port) {
       }
       callback(null, user);
     },
-  });
-
-  server.addService(proto.ResourceService.service, {
-    getResource(call, callback) {
-      const resource = resourcesById[call.request.id];
-      if (!resource) {
-        callback({ code: grpc.status.NOT_FOUND, message: "Resource not found" });
-        return;
+    checkEnrollment(call, callback) {
+      const { user_id, course_code } = call.request;
+      // Mock that only Student One is enrolled in ECE1779
+      if (course_code === "ECE1779") {
+        if (user_id === "student_1") {
+          return callback(null, { is_enrolled: true, role: "student" });
+        }
+        if (user_id === "ta_1") {
+           return callback(null, { is_enrolled: true, role: "ta" });
+        }
       }
-      callback(null, resource);
-    },
-    recordAccessLog(call, callback) {
-      accessLogs.push({
-        userId: call.request.userId,
-        resourceId: call.request.resourceId,
-        action: call.request.action,
-        details: call.request.details,
-      });
-      callback(null, {
-        logId: `log_${accessLogs.length}`,
-        timestampMs: Date.now(),
-      });
-    },
+      callback(null, { is_enrolled: false, role: "" });
+    }
   });
 
   return new Promise((resolve, reject) => {
@@ -135,7 +125,22 @@ async function run() {
   try {
     mockUserServer = await startMockUserServer(USER_SERVER_PORT);
     process.env.USER_SERVER = USER_SERVER_TARGET;
-    const { startServer } = require("../index");
+
+    // Mock local Prisma since it's now in the file-server
+    const prismaModule = require("../src/lib/prisma");
+    prismaModule.prisma = {
+      resource: {
+        findUnique: async ({ where }) => resourcesById[where.id],
+      },
+      accessLog: {
+        create: async ({ data }) => {
+          accessLogs.push(data);
+          return { id: `log_${accessLogs.length}`, createdAt: new Date() };
+        }
+      }
+    };
+
+    const { startServer } = require("../src/server");
     const started = await startServer(FILE_SERVER_PORT);
     grpcServer = started.server;
 
@@ -161,7 +166,6 @@ async function run() {
     assert.strictEqual(uploadSuccessLog.action, "UPLOAD_URL_ISSUED");
     assert.strictEqual(uploadSuccessLog.userId, "user_123");
     assert.strictEqual(uploadSuccessLog.resourceId, uploadRes.object_key);
-    assert.match(uploadSuccessLog.details, /rpc=GetUploadUrl status=SUCCESS/);
     console.log("PASS GetUploadUrl returns a signed URL");
 
     const logsBeforeUploadFailure = accessLogs.length;
@@ -181,7 +185,6 @@ async function run() {
     assert.strictEqual(uploadFailureLog.action, "UPLOAD_URL_DENIED");
     assert.strictEqual(uploadFailureLog.userId, "user_123");
     assert.strictEqual(uploadFailureLog.resourceId, "");
-    assert.match(uploadFailureLog.details, /rpc=GetUploadUrl status=FAILURE/);
     console.log("PASS GetUploadUrl rejects missing content_type");
 
     const logsBeforeDownloadMissingResource = accessLogs.length;
@@ -193,7 +196,6 @@ async function run() {
     assert.ok(downloadMissingResourceLog);
     assert.strictEqual(downloadMissingResourceLog.action, "DOWNLOAD_URL_DENIED");
     assert.strictEqual(downloadMissingResourceLog.resourceId, "");
-    assert.match(downloadMissingResourceLog.details, /rpc=GetDownloadUrl status=FAILURE/);
     console.log("PASS GetDownloadUrl rejects missing resource_id");
 
     const logsBeforeDownloadSuccess = accessLogs.length;
@@ -208,7 +210,6 @@ async function run() {
     assert.strictEqual(downloadSuccessLog.action, "DOWNLOAD_URL_ISSUED");
     assert.strictEqual(downloadSuccessLog.userId, "student_1");
     assert.strictEqual(downloadSuccessLog.resourceId, "res_lecture");
-    assert.match(downloadSuccessLog.details, /rpc=GetDownloadUrl status=SUCCESS/);
     console.log("PASS GetDownloadUrl returns signed URL and logs DOWNLOAD_URL_ISSUED");
 
     const logsBeforeDownloadDenied = accessLogs.length;
@@ -226,7 +227,6 @@ async function run() {
     assert.strictEqual(downloadDeniedLog.action, "DOWNLOAD_URL_DENIED");
     assert.strictEqual(downloadDeniedLog.userId, "student_1");
     assert.strictEqual(downloadDeniedLog.resourceId, "res_exam");
-    assert.match(downloadDeniedLog.details, /rpc=GetDownloadUrl status=FAILURE/);
     console.log("PASS GetDownloadUrl denial logs DOWNLOAD_URL_DENIED");
 
     console.log("All file-server integration tests passed.");

@@ -4,12 +4,24 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "test": "node test/integration.test.js"
+    "generate": "prisma generate",
+    "postinstall": "prisma generate",
+    "test": "node test/resourceService.test.js && node test/integration.test.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.883.0",
     "@aws-sdk/s3-request-presigner": "^3.883.0",
     "@grpc/grpc-js": "^1.14.3",
-    "@grpc/proto-loader": "^0.7.15"
+    "@grpc/proto-loader": "^0.7.15",
+    "@prisma/adapter-pg": "^7.5.0",
+    "@prisma/client": "^7.5.0",
+    "dotenv": "^17.3.1",
+    "pg": "^8.20.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "prisma": "^7.5.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
   }
 }

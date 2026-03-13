@@ -2,7 +2,6 @@ import "dotenv/config";
 import path from "path";
 import grpc from "@grpc/grpc-js";
 import protoLoader from "@grpc/proto-loader";
-import { resourceServiceHandlers } from "./grpc/resourceService";
 import { userServiceHandlers } from "./grpc/userService";
 
 // Docker: cwd is /app/user-server, proto at /app/proto. Local: cwd is user-server, proto at ../proto.
@@ -21,7 +20,6 @@ const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
 interface LoadedProto {
   ece1779: {
     UserService: { service: grpc.ServiceDefinition };
-    ResourceService: { service: grpc.ServiceDefinition };
   };
 }
 
@@ -29,7 +27,6 @@ const proto = (grpc.loadPackageDefinition(packageDefinition) as unknown as Loade
 
 const server = new grpc.Server();
 server.addService(proto.UserService.service, userServiceHandlers);
-server.addService(proto.ResourceService.service, resourceServiceHandlers);
 server.bindAsync(
   `0.0.0.0:${PORT}`,
   grpc.ServerCredentials.createInsecure(),

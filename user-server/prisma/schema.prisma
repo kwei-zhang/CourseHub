@@ -19,51 +19,11 @@ model User {
   role          String     @default("user")
   sessions      Session[]
   accounts      Account[]
-  resources     Resource[]
+  enrollments   Enrollment[]
 
   @@map("user")
 }
 
-enum VisibilityPolicy {
-  LECTURE
-  ASSIGNMENT
-  EXAM
-  SOLUTION
-  HIGHLY_SENSITIVE
-}
-
-model Resource {
-  id          String           @id @default(cuid())
-  title       String
-  courseCode  String
-  topic       String?
-  instructor  String?
-  uploadDate  DateTime         @default(now())
-  tags        String[]         @default([])
-  contentType String
-  objectKey   String           @unique
-  policy      VisibilityPolicy @default(LECTURE)
-
-  uploaderId String
-  uploader   User   @relation(fields: [uploaderId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("resource")
-}
-
-model AccessLog {
-  id         String   @id @default(cuid())
-  userId     String
-  resourceId String
-  action     String // "UPLOAD" | "DOWNLOAD" | "DENIED" etc.
-  createdAt  DateTime @default(now())
-
-  @@index([userId])
-  @@index([resourceId])
-  @@map("access_log")
-}
 
 model Session {
   id        String   @id @default(cuid())
@@ -107,4 +67,26 @@ model Verification {
   updatedAt  DateTime?
 
   @@map("verification")
+}
+
+model Course {
+  id          String       @id @default(cuid())
+  code        String       @unique
+  name        String
+  enrollments Enrollment[]
+
+  @@map("course")
+}
+
+model Enrollment {
+  id        String   @id @default(cuid())
+  userId    String
+  courseId  String
+  role      String   @default("student") // student, ta, instructor
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+  @@map("enrollment")
 }

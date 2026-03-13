@@ -26,6 +26,8 @@ export type SearchUsersByNameRequest = { name_query: string };
 export type SearchUsersByNameResponse = { users: GetUserGrpcResponse[] };
 export type GetUserByEmailRequest = { email: string };
 export type GetUserByEmailResponse = { user?: GetUserGrpcResponse };
+export type CheckEnrollmentRequest = { user_id: string; course_code: string };
+export type CheckEnrollmentResponse = { is_enrolled: boolean; role: string };
 
 /** Resource shape returned by ResourceService RPCs. */
 export type ResourceGrpcResponse = {

@@ -1,43 +1,28 @@
-const grpc = require("@grpc/grpc-js");
+import * as grpc from "@grpc/grpc-js";
 
-function createUserServerClients(proto, target) {
-  const resourceClient = new proto.ResourceService(target, grpc.credentials.createInsecure());
-  const userClient = new proto.UserService(target, grpc.credentials.createInsecure());
-
-  function recordAccessLog({ userId, resourceId, action, details }) {
-    return new Promise((resolve, reject) => {
-      resourceClient.recordAccessLog({ userId, resourceId, action, details }, (err, res) => {
-        if (err) reject(err);
-        else resolve(res);
-      });
-    });
-  }
-
-  function getResourceById(resourceId) {
-    return new Promise((resolve, reject) => {
-      resourceClient.getResource({ id: resourceId }, (err, res) => {
-        if (err) reject(err);
-        else resolve(res);
-      });
-    });
-  }
+export function createUserServerClients(proto, target) {
+  const client = new proto.UserService(target, grpc.credentials.createInsecure());
 
   function getUserById(userId) {
     return new Promise((resolve, reject) => {
-      userClient.getUser({ user_id: userId }, (err, res) => {
-        if (err) reject(err);
-        else resolve(res);
+      client.GetUser({ user_id: userId }, (err, response) => {
+        if (err) {
+          if (err.code === grpc.status.NOT_FOUND) return resolve(null);
+          return reject(err);
+        }
+        resolve(response);
       });
     });
   }
 
-  return {
-    getResourceById,
-    getUserById,
-    recordAccessLog,
-  };
-}
+  function checkEnrollment(userId, courseCode) {
+    return new Promise((resolve, reject) => {
+      client.CheckEnrollment({ user_id: userId, course_code: courseCode }, (err, response) => {
+        if (err) return reject(err);
+        resolve(response);
+      });
+    });
+  }
 
-module.exports = {
-  createUserServerClients,
-};
+  return { getUserById, checkEnrollment };
+}

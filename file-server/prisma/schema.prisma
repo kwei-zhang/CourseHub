@@ -1,0 +1,47 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum VisibilityPolicy {
+  LECTURE
+  ASSIGNMENT
+  EXAM
+  SOLUTION
+  HIGHLY_SENSITIVE
+}
+
+model Resource {
+  id          String           @id @default(cuid())
+  title       String
+  courseCode  String
+  topic       String?
+  instructor  String?
+  uploadDate  DateTime         @default(now())
+  tags        String[]         @default([])
+  contentType String
+  objectKey   String           @unique
+  policy      VisibilityPolicy @default(LECTURE)
+
+  uploaderId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("resource")
+}
+
+model AccessLog {
+  id         String   @id @default(cuid())
+  userId     String
+  resourceId String
+  action     String // "UPLOAD" | "DOWNLOAD" | "DENIED" etc.
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([resourceId])
+  @@map("access_log")
+}

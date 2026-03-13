@@ -21,6 +21,7 @@ service UserService {
   rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
   rpc SearchUsersByName(SearchUsersByNameRequest) returns (SearchUsersByNameResponse);
   rpc GetUserByEmail(GetUserByEmailRequest) returns (GetUserByEmailResponse);
+  rpc CheckEnrollment(CheckEnrollmentRequest) returns (CheckEnrollmentResponse);
 }
 
 message GetUserRequest {
@@ -68,6 +69,16 @@ message GetUserByEmailRequest {
 
 message GetUserByEmailResponse {
   GetUserResponse user = 1;
+}
+
+message CheckEnrollmentRequest {
+  string user_id = 1;
+  string course_code = 2;
+}
+
+message CheckEnrollmentResponse {
+  bool is_enrolled = 1;
+  string role = 2;
 }
 
 // ---------------------------------------------------------------------------
