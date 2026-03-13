@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth
+  namespace: lrms
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth
+  template:
+    metadata:
+      labels:
+        app: auth
+    spec:
+      containers:
+        - name: auth
+          image: REPLACE_WITH_AUTH_IMAGE
+          ports:
+            - containerPort: 3000
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: lrms-secrets
+                  key: DATABASE_URL
+            - name: BETTER_AUTH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: lrms-secrets
+                  key: BETTER_AUTH_SECRET
+            - name: BETTER_AUTH_URL
+              valueFrom:
+                secretKeyRef:
+                  name: lrms-secrets
+                  key: BETTER_AUTH_URL
+            - name: GOOGLE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: lrms-secrets
+                  key: GOOGLE_CLIENT_ID
+            - name: GOOGLE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: lrms-secrets
+                  key: GOOGLE_CLIENT_SECRET
+            - name: PROTO_PATH
+              value: /app/proto/services.proto
+            - name: USER_SERVER
+              value: user-server:5001
+            - name: FILE_SERVER
+              value: file-server:5002
+            - name: SYSTEM_SERVER
+              value: system-server:5003
