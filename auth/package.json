@@ -8,7 +8,8 @@
     "build": "tsc",
     "start": "tsx src/index.ts",
     "dev": "tsx watch src/index.ts",
-    "test": "node --test --import tsx test/auth.test.ts"
+    "test": "node --test --import tsx test/auth.test.ts",
+    "prisma:generate": "prisma generate"
   },
   "dependencies": {
     "@grpc/grpc-js": "^1.14.3",

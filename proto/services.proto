@@ -2,10 +2,25 @@ syntax = "proto3";
 
 package ece1779;
 
+// ---------------------------------------------------------------------------
+// Shared/Common
+// ---------------------------------------------------------------------------
 message GetRequest {}
 
 message GetResponse {
   string message = 1;
+}
+
+// ---------------------------------------------------------------------------
+// UserService
+// ---------------------------------------------------------------------------
+service UserService {
+  rpc Get(GetRequest) returns (GetResponse);
+  rpc GetUser(GetUserRequest) returns (GetUserResponse);
+  rpc UpdateUser(UpdateUserRequest) returns (GetUserResponse);
+  rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
+  rpc SearchUsersByName(SearchUsersByNameRequest) returns (SearchUsersByNameResponse);
+  rpc GetUserByEmail(GetUserByEmailRequest) returns (GetUserByEmailResponse);
 }
 
 message GetUserRequest {
@@ -55,19 +70,121 @@ message GetUserByEmailResponse {
   GetUserResponse user = 1;
 }
 
-service UserService {
-  rpc Get(GetRequest) returns (GetResponse);
-  rpc GetUser(GetUserRequest) returns (GetUserResponse);
-  rpc UpdateUser(UpdateUserRequest) returns (GetUserResponse);
-  rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
-  rpc SearchUsersByName(SearchUsersByNameRequest) returns (SearchUsersByNameResponse);
-  rpc GetUserByEmail(GetUserByEmailRequest) returns (GetUserByEmailResponse);
+// ---------------------------------------------------------------------------
+// ResourceService
+// ---------------------------------------------------------------------------
+message Resource {
+  string id = 1;
+  string title = 2;
+  string courseCode = 3;
+  string contentType = 4;
+  string objectKey = 5;
+  string policy = 6;
+  repeated string tags = 7;
+  string uploaderId = 8;
+}
+
+message CreateResourceRequest {
+  string title = 1;
+  string courseCode = 2;
+  string contentType = 3;
+  string objectKey = 4;
+  string policy = 5;
+  repeated string tags = 6;
+  string uploaderId = 7;
+}
+
+message GetResourceRequest { string id = 1; }
+message ListResourcesRequest { string courseCode = 1; }
+message ListResourcesResponse { repeated Resource resources = 1; }
+
+message UpdateResourceRequest {
+  string id = 1;
+  optional string title = 2;
+  optional string courseCode = 3;
+  optional string contentType = 4;
+  optional string objectKey = 5;
+  optional string policy = 6;
+  repeated string tags = 7;
+  optional string uploaderId = 8;
+}
+
+message DeleteResourceRequest {
+  string id = 1;
+}
+
+message DeleteResourceResponse {
+  string id = 1;
+  bool deleted = 2;
+}
+
+message RecordAccessLogRequest {
+  string userId = 1;
+  string resourceId = 2;
+  AccessAction action = 3;
+  string details = 4;   // optional (reason, policy, ip, etc.)
+}
+
+message RecordAccessLogResponse {
+  string logId = 1;
+  int64  timestampMs = 2;
+}
+
+enum AccessAction {
+  UPLOAD_URL_ISSUED = 0;
+  UPLOAD_URL_DENIED = 1;
+  DOWNLOAD_URL_ISSUED = 2;
+  DOWNLOAD_URL_DENIED = 3;
+  METADATA_CREATED = 4;
+  RESOURCE_DELETED = 5;
+}
+
+service ResourceService {
+  rpc CreateResource(CreateResourceRequest) returns (Resource);
+  rpc GetResource(GetResourceRequest) returns (Resource);
+  rpc ListResources(ListResourcesRequest) returns (ListResourcesResponse);
+  rpc UpdateResource(UpdateResourceRequest) returns (Resource);
+  rpc DeleteResource(DeleteResourceRequest) returns (DeleteResourceResponse);
+
+  rpc RecordAccessLog(RecordAccessLogRequest) returns (RecordAccessLogResponse);
+}
+
+// ---------------------------------------------------------------------------
+// FileService
+// ---------------------------------------------------------------------------
+message GetUploadUrlRequest {
+  string title = 1;
+  string courseCode = 2;
+  string contentType = 3;
+  string policy = 4;
+  repeated string tags = 5;
+  string uploaderId = 6;
+  uint32 expires_in = 7;
+}
+
+message GetUploadUrlResponse {
+  string url = 1;
+  string object_key = 2;
+}
+
+message GetDownloadUrlRequest {
+  string resource_id = 1;
+  int32 expires_in = 2;
+  string requester_user_id = 3;
+}
+
+message GetDownloadUrlResponse {
+  string url = 1;
 }
 
 service FileService {
-  rpc Get(GetRequest) returns (GetResponse);
+  rpc GetUploadUrl(GetUploadUrlRequest) returns (GetUploadUrlResponse);
+  rpc GetDownloadUrl(GetDownloadUrlRequest) returns (GetDownloadUrlResponse);
 }
 
+// ---------------------------------------------------------------------------
+// SystemService
+// ---------------------------------------------------------------------------
 service SystemService {
   rpc Get(GetRequest) returns (GetResponse);
 }
