@@ -5,6 +5,11 @@ import type { Router } from "express";
 import grpc from "@grpc/grpc-js";
 import { isRole, type AuthUser, type Role } from "../src/types/auth";
 import { requireRole } from "../src/middleware/auth";
+import {
+  recordHttpMetric,
+  renderPrometheusMetrics,
+  resetMetrics,
+} from "../src/lib/metrics";
 import fileProxyRouter from "../src/routes/proxy/file";
 import resourceProxyRouter from "../src/routes/proxy/resource";
 import { fileClient, resourceClient } from "../src/lib/grpc/client";
@@ -422,5 +427,30 @@ describe("resource proxy routes", () => {
     assert.deepStrictEqual((res.json as ReturnType<typeof mock.fn>).mock.calls[0]?.arguments[0], {
       error: "userId and resourceId are required",
     });
+  });
+});
+
+describe("metrics", () => {
+  it("renders request totals and histogram output", () => {
+    resetMetrics();
+
+    recordHttpMetric("get", "/health/live", 200, 0.04);
+    recordHttpMetric("get", "/health/live", 503, 0.6);
+
+    const output = renderPrometheusMetrics();
+
+    assert.match(
+      output,
+      /auth_http_requests_total\{method="GET",route="\/health\/live",status_class="2xx"\} 1/
+    );
+    assert.match(
+      output,
+      /auth_http_requests_total\{method="GET",route="\/health\/live",status_class="5xx"\} 1/
+    );
+    assert.match(
+      output,
+      /auth_http_request_duration_seconds_bucket\{method="GET",route="\/health\/live",status_class="2xx",le="0.05"\} 1/
+    );
+    assert.match(output, /auth_http_request_duration_seconds_count 2/);
   });
 });

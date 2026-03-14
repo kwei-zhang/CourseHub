@@ -18,6 +18,18 @@ spec:
           image: REPLACE_WITH_AUTH_IMAGE
           ports:
             - containerPort: 3000
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
           env:
             - name: DATABASE_URL
               valueFrom:
