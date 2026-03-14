@@ -1,0 +1,52 @@
+services:
+
+  user-server:
+    build:
+      context: .
+      dockerfile: user-server/Dockerfile
+    ports:
+      - "5001:5001"
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+    restart: unless-stopped
+
+  file-server:
+    build:
+      context: .
+      dockerfile: file-server/Dockerfile
+    ports:
+      - "5002:5002"
+    restart: unless-stopped
+
+  system-server:
+    build:
+      context: .
+      dockerfile: system-server/Dockerfile
+    ports:
+      - "5003:5003"
+    restart: unless-stopped
+
+  auth:
+    build:
+      context: .
+      dockerfile: auth/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      PROTO_PATH: /app/proto/services.proto
+      USER_SERVER: user-server:5001
+      FILE_SERVER: file-server:5002
+      SYSTEM_SERVER: system-server:5003
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-replace-me-with-32-char-secret-min}
+      BETTER_AUTH_URL: http://localhost:3000
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+    depends_on:
+      user-server:
+        condition: service_started
+      file-server:
+        condition: service_started
+      system-server:
+        condition: service_started
+    restart: unless-stopped
