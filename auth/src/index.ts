@@ -3,6 +3,7 @@ import express from "express";
 import { toNodeHandler } from "better-auth/node";
 import { auth } from "./lib/auth";
 import proxyRouter from "./routes/proxy";
+import cors from "cors";
 
 function logError(message: string, err: unknown): void {
   const timestamp = new Date().toISOString();
@@ -21,6 +22,11 @@ const app = express();
 const port = process.env.PORT ?? 3000;
 
 // Better Auth must handle /api/auth/* before express.json() (see Better Auth Express docs)
+app.use(cors({
+  origin: ["http://localhost:3000", "http://127.0.0.1:3000"],
+  credentials: true,
+}));
+
 app.all("/api/auth/*", toNodeHandler(auth));
 
 app.use(express.json());
