@@ -1,6 +1,23 @@
 import { MOCK_RESOURCES } from "./mock-data";
 import { Resource } from "./types";
 
+const AUTH_URL = process.env.NEXT_PUBLIC_AUTH_URL ?? "http://localhost:4000";
+
+export async function authFetch(
+  path: string,
+  token: string,
+  init?: RequestInit
+): Promise<Response> {
+  return fetch(`${AUTH_URL}${path}`, {
+    ...init,
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+      ...(init?.headers ?? {}),
+    },
+  });
+}
+
 let resources: Resource[] = [...MOCK_RESOURCES];
 
 export async function getResources(): Promise<Resource[]> {

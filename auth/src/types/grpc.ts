@@ -117,6 +117,28 @@ export type SearchUsersByNameResponse = { users: GetUserResponse[] };
 /** Response from UserService.GetUserByEmail. */
 export type GetUserByEmailResponse = { user?: GetUserResponse };
 
+/** Enrollment types. */
+export type CourseEnrollment = {
+  course_id: string;
+  course_code: string;
+  course_name: string;
+  role: string;
+};
+export type ListEnrollmentsResponse = { enrollments: CourseEnrollment[] };
+
+export type EnrollUserRequest = { user_id: string; course_code: string; role: string };
+export type EnrollUserResponse = { ok: boolean; enrollment_id: string };
+
+export type UnenrollUserRequest = { user_id: string; course_code: string };
+export type UnenrollUserResponse = { ok: boolean };
+
+export type CourseInfo = { id: string; code: string; name: string };
+export type ListCoursesResponse = { courses: CourseInfo[] };
+
+export type CreateCourseRequest = { code: string; name: string; instructor_id: string };
+export type DeleteCourseRequest = { code: string };
+export type DeleteCourseResponse = { ok: boolean };
+
 /** Loaded proto package with service constructors. */
 export interface Ece1779Package {
   UserService: grpc.ServiceClientConstructor;

@@ -22,6 +22,12 @@ service UserService {
   rpc SearchUsersByName(SearchUsersByNameRequest) returns (SearchUsersByNameResponse);
   rpc GetUserByEmail(GetUserByEmailRequest) returns (GetUserByEmailResponse);
   rpc CheckEnrollment(CheckEnrollmentRequest) returns (CheckEnrollmentResponse);
+  rpc ListEnrollments(ListEnrollmentsRequest) returns (ListEnrollmentsResponse);
+  rpc EnrollUser(EnrollUserRequest) returns (EnrollUserResponse);
+  rpc UnenrollUser(UnenrollUserRequest) returns (UnenrollUserResponse);
+  rpc ListCourses(ListCoursesRequest) returns (ListCoursesResponse);
+  rpc CreateCourse(CreateCourseRequest) returns (CourseInfo);
+  rpc DeleteCourse(DeleteCourseRequest) returns (DeleteCourseResponse);
 }
 
 message GetUserRequest {
@@ -79,6 +85,67 @@ message CheckEnrollmentRequest {
 message CheckEnrollmentResponse {
   bool is_enrolled = 1;
   string role = 2;
+}
+
+message ListEnrollmentsRequest {
+  string user_id = 1;
+}
+
+message CourseEnrollment {
+  string course_id = 1;
+  string course_code = 2;
+  string course_name = 3;
+  string role = 4;
+}
+
+message ListEnrollmentsResponse {
+  repeated CourseEnrollment enrollments = 1;
+}
+
+message EnrollUserRequest {
+  string user_id = 1;
+  string course_code = 2;
+  string role = 3;
+}
+
+message EnrollUserResponse {
+  bool ok = 1;
+  string enrollment_id = 2;
+}
+
+message UnenrollUserRequest {
+  string user_id = 1;
+  string course_code = 2;
+}
+
+message UnenrollUserResponse {
+  bool ok = 1;
+}
+
+message CourseInfo {
+  string id = 1;
+  string code = 2;
+  string name = 3;
+}
+
+message ListCoursesRequest {}
+
+message ListCoursesResponse {
+  repeated CourseInfo courses = 1;
+}
+
+message CreateCourseRequest {
+  string code = 1;
+  string name = 2;
+  string instructor_id = 3;
+}
+
+message DeleteCourseRequest {
+  string code = 1;
+}
+
+message DeleteCourseResponse {
+  bool ok = 1;
 }
 
 // ---------------------------------------------------------------------------

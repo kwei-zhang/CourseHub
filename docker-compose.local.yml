@@ -5,6 +5,8 @@ services:
       POSTGRES_USER: ece1779
       POSTGRES_PASSWORD: ece1779
       POSTGRES_DB: ece1779
+    ports:
+      - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     restart: unless-stopped

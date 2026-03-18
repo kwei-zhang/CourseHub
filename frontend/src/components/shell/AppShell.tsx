@@ -3,7 +3,6 @@
 import { useAuth } from "@/lib/AuthContext";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
-import Topbar from "./Topbar";
 import Sidebar from "./Sidebar";
 
 const PUBLIC_PATHS = ["/login"];
@@ -36,12 +35,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   // Authenticated pages — full shell
   return (
-    <>
-      <Topbar />
-      <div className="flex">
-        <Sidebar />
-        <main className="flex-1 p-6">{children}</main>
-      </div>
-    </>
+    <div className="flex">
+      <Sidebar />
+      <main className="flex-1 p-6">{children}</main>
+    </div>
   );
 }

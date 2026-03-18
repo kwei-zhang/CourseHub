@@ -29,6 +29,29 @@ export type GetUserByEmailResponse = { user?: GetUserGrpcResponse };
 export type CheckEnrollmentRequest = { user_id: string; course_code: string };
 export type CheckEnrollmentResponse = { is_enrolled: boolean; role: string };
 
+export type CourseEnrollment = {
+  course_id: string;
+  course_code: string;
+  course_name: string;
+  role: string;
+};
+export type ListEnrollmentsRequest = { user_id: string };
+export type ListEnrollmentsResponse = { enrollments: CourseEnrollment[] };
+
+export type EnrollUserRequest = { user_id: string; course_code: string; role: string };
+export type EnrollUserResponse = { ok: boolean; enrollment_id: string };
+
+export type UnenrollUserRequest = { user_id: string; course_code: string };
+export type UnenrollUserResponse = { ok: boolean };
+
+export type CourseInfo = { id: string; code: string; name: string };
+export type ListCoursesRequest = Record<string, never>;
+export type ListCoursesResponse = { courses: CourseInfo[] };
+
+export type CreateCourseRequest = { code: string; name: string; instructor_id: string };
+export type DeleteCourseRequest = { code: string };
+export type DeleteCourseResponse = { ok: boolean };
+
 /** Resource shape returned by ResourceService RPCs. */
 export type ResourceGrpcResponse = {
   id: string;

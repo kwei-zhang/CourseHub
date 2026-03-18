@@ -11,6 +11,17 @@ import type {
   UpdateUserRequest,
   CheckEnrollmentRequest,
   CheckEnrollmentResponse,
+  ListEnrollmentsRequest,
+  ListEnrollmentsResponse,
+  EnrollUserRequest,
+  EnrollUserResponse,
+  UnenrollUserRequest,
+  UnenrollUserResponse,
+  ListCoursesResponse,
+  CourseInfo,
+  CreateCourseRequest,
+  DeleteCourseRequest,
+  DeleteCourseResponse,
 } from "../types";
 
 function mapUserToGrpcResponse(user: User): GetUserGrpcResponse {
@@ -254,6 +265,188 @@ function checkEnrollmentHandler(
     });
 }
 
+function listEnrollmentsHandler(
+  call: grpc.ServerUnaryCall<ListEnrollmentsRequest, ListEnrollmentsResponse>,
+  callback: grpc.sendUnaryData<ListEnrollmentsResponse>
+): void {
+  const userId = call.request.user_id;
+  if (!userId) {
+    callback({ code: grpc.status.INVALID_ARGUMENT, message: "user_id is required" }, undefined);
+    return;
+  }
+  if (!prisma) {
+    callback({ code: grpc.status.UNAVAILABLE, message: "Database not configured" }, undefined);
+    return;
+  }
+  prisma.enrollment
+    .findMany({
+      where: { userId },
+      include: { course: true },
+    })
+    .then((rows) => {
+      const enrollments = rows.map((e) => ({
+        course_id: e.courseId,
+        course_code: e.course.code,
+        course_name: e.course.name,
+        role: e.role,
+      }));
+      callback(null, { enrollments });
+    })
+    .catch((err) => {
+      console.error("ListEnrollments error:", err);
+      callback({ code: grpc.status.INTERNAL, message: err instanceof Error ? err.message : "DB error" }, undefined);
+    });
+}
+
+function enrollUserHandler(
+  call: grpc.ServerUnaryCall<EnrollUserRequest, EnrollUserResponse>,
+  callback: grpc.sendUnaryData<EnrollUserResponse>
+): void {
+  const { user_id, course_code, role } = call.request;
+  if (!user_id || !course_code) {
+    callback({ code: grpc.status.INVALID_ARGUMENT, message: "user_id and course_code are required" }, undefined);
+    return;
+  }
+  if (!prisma) {
+    callback({ code: grpc.status.UNAVAILABLE, message: "Database not configured" }, undefined);
+    return;
+  }
+  prisma.course
+    .findUnique({ where: { code: course_code } })
+    .then((course) => {
+      if (!course) {
+        callback({ code: grpc.status.NOT_FOUND, message: `Course '${course_code}' not found` }, undefined);
+        return;
+      }
+      return prisma!.enrollment
+        .upsert({
+          where: { userId_courseId: { userId: user_id, courseId: course.id } },
+          create: { userId: user_id, courseId: course.id, role: role || "student" },
+          update: { role: role || "student" },
+        })
+        .then((e) => callback(null, { ok: true, enrollment_id: e.id }));
+    })
+    .catch((err) => {
+      console.error("EnrollUser error:", err);
+      callback({ code: grpc.status.INTERNAL, message: err instanceof Error ? err.message : "DB error" }, undefined);
+    });
+}
+
+function unenrollUserHandler(
+  call: grpc.ServerUnaryCall<UnenrollUserRequest, UnenrollUserResponse>,
+  callback: grpc.sendUnaryData<UnenrollUserResponse>
+): void {
+  const { user_id, course_code } = call.request;
+  if (!user_id || !course_code) {
+    callback({ code: grpc.status.INVALID_ARGUMENT, message: "user_id and course_code are required" }, undefined);
+    return;
+  }
+  if (!prisma) {
+    callback({ code: grpc.status.UNAVAILABLE, message: "Database not configured" }, undefined);
+    return;
+  }
+  prisma.course
+    .findUnique({ where: { code: course_code } })
+    .then((course) => {
+      if (!course) {
+        callback({ code: grpc.status.NOT_FOUND, message: `Course '${course_code}' not found` }, undefined);
+        return;
+      }
+      return prisma!.enrollment
+        .delete({ where: { userId_courseId: { userId: user_id, courseId: course.id } } })
+        .then(() => callback(null, { ok: true }))
+        .catch((err: unknown) => {
+          if ((err as { code?: string })?.code === "P2025") {
+            callback(null, { ok: false });
+          } else {
+            throw err;
+          }
+        });
+    })
+    .catch((err) => {
+      console.error("UnenrollUser error:", err);
+      callback({ code: grpc.status.INTERNAL, message: err instanceof Error ? err.message : "DB error" }, undefined);
+    });
+}
+
+function listCoursesHandler(
+  _call: grpc.ServerUnaryCall<Record<string, never>, ListCoursesResponse>,
+  callback: grpc.sendUnaryData<ListCoursesResponse>
+): void {
+  if (!prisma) {
+    callback({ code: grpc.status.UNAVAILABLE, message: "Database not configured" }, undefined);
+    return;
+  }
+  prisma.course
+    .findMany({ orderBy: { code: "asc" } })
+    .then((courses) => {
+      callback(null, { courses: courses.map((c) => ({ id: c.id, code: c.code, name: c.name })) });
+    })
+    .catch((err) => {
+      console.error("ListCourses error:", err);
+      callback({ code: grpc.status.INTERNAL, message: err instanceof Error ? err.message : "DB error" }, undefined);
+    });
+}
+
+function createCourseHandler(
+  call: grpc.ServerUnaryCall<CreateCourseRequest, CourseInfo>,
+  callback: grpc.sendUnaryData<CourseInfo>
+): void {
+  const { code, name, instructor_id } = call.request;
+  if (!code || !name) {
+    callback({ code: grpc.status.INVALID_ARGUMENT, message: "code and name are required" }, undefined);
+    return;
+  }
+  if (!prisma) {
+    callback({ code: grpc.status.UNAVAILABLE, message: "Database not configured" }, undefined);
+    return;
+  }
+  prisma.course
+    .create({ data: { code: code.toUpperCase(), name } })
+    .then(async (c) => {
+      if (instructor_id) {
+        await prisma!.enrollment.create({
+          data: { userId: instructor_id, courseId: c.id, role: "instructor" },
+        });
+      }
+      callback(null, { id: c.id, code: c.code, name: c.name });
+    })
+    .catch((err: unknown) => {
+      if ((err as { code?: string })?.code === "P2002") {
+        callback({ code: grpc.status.ALREADY_EXISTS, message: `Course '${code}' already exists` }, undefined);
+        return;
+      }
+      console.error("CreateCourse error:", err);
+      callback({ code: grpc.status.INTERNAL, message: err instanceof Error ? err.message : "DB error" }, undefined);
+    });
+}
+
+function deleteCourseHandler(
+  call: grpc.ServerUnaryCall<DeleteCourseRequest, DeleteCourseResponse>,
+  callback: grpc.sendUnaryData<DeleteCourseResponse>
+): void {
+  const { code } = call.request;
+  if (!code) {
+    callback({ code: grpc.status.INVALID_ARGUMENT, message: "code is required" }, undefined);
+    return;
+  }
+  if (!prisma) {
+    callback({ code: grpc.status.UNAVAILABLE, message: "Database not configured" }, undefined);
+    return;
+  }
+  prisma.course
+    .delete({ where: { code: code.toUpperCase() } })
+    .then(() => callback(null, { ok: true }))
+    .catch((err: unknown) => {
+      if ((err as { code?: string })?.code === "P2025") {
+        callback(null, { ok: false });
+        return;
+      }
+      console.error("DeleteCourse error:", err);
+      callback({ code: grpc.status.INTERNAL, message: err instanceof Error ? err.message : "DB error" }, undefined);
+    });
+}
+
 export const userServiceHandlers = {
   get,
   getUser,
@@ -262,4 +455,10 @@ export const userServiceHandlers = {
   searchUsersByName: searchUsersByNameHandler,
   getUserByEmail: getUserByEmailHandler,
   checkEnrollment: checkEnrollmentHandler,
+  listEnrollments: listEnrollmentsHandler,
+  enrollUser: enrollUserHandler,
+  unenrollUser: unenrollUserHandler,
+  listCourses: listCoursesHandler,
+  createCourse: createCourseHandler,
+  deleteCourse: deleteCourseHandler,
 };

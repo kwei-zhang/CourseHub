@@ -1,7 +1,7 @@
 /** Allowed user roles (must match schema and Better Auth user.additionalFields). */
-export type Role = "user" | "publisher" | "admin";
+export type Role = "user" | "student" | "ta" | "instructor" | "admin";
 
-const ROLES: Role[] = ["user", "publisher", "admin"];
+const ROLES: Role[] = ["user", "student", "ta", "instructor", "admin"];
 
 export function isRole(s: string): s is Role {
   return ROLES.includes(s as Role);

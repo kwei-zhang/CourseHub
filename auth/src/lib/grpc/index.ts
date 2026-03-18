@@ -11,6 +11,12 @@ export {
   userDeleteUser,
   userSearchUsersByName,
   userGetUserByEmail,
+  userListEnrollments,
+  userEnrollUser,
+  userUnenrollUser,
+  userListCourses,
+  userCreateCourse,
+  userDeleteCourse,
 } from "./user";
 export {
   resourceCreateResource,
@@ -43,4 +49,15 @@ export type {
   DeleteUserResponse,
   SearchUsersByNameResponse,
   GetUserByEmailResponse,
+  CourseEnrollment,
+  ListEnrollmentsResponse,
+  EnrollUserRequest,
+  EnrollUserResponse,
+  UnenrollUserRequest,
+  UnenrollUserResponse,
+  CourseInfo,
+  ListCoursesResponse,
+  CreateCourseRequest,
+  DeleteCourseRequest,
+  DeleteCourseResponse,
 } from "../../types/grpc";
