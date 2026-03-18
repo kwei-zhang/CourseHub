@@ -7,11 +7,9 @@ datasource db {
 }
 
 enum VisibilityPolicy {
-  LECTURE
-  ASSIGNMENT
-  EXAM
-  SOLUTION
-  HIGHLY_SENSITIVE
+  STUDENT     // visible to all enrolled users (students, TAs, instructors)
+  TA          // visible to TAs and instructors only
+  INSTRUCTOR  // visible to instructors only
 }
 
 model Resource {
@@ -24,7 +22,7 @@ model Resource {
   tags        String[]         @default([])
   contentType String
   objectKey   String           @unique
-  policy      VisibilityPolicy @default(LECTURE)
+  policy      VisibilityPolicy @default(STUDENT)
 
   uploaderId String
 

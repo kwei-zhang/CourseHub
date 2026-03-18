@@ -1,3 +1,5 @@
+require("dotenv").config();
+
 const { createServer, startServer } = require("./src/server");
 
 if (require.main === module) {

@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { getResource } from "@/lib/api";
+import { Badge } from "@/components/ui/badge";
+import { getResource, deleteResource } from "@/lib/api";
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Resource } from "@/lib/types";
-import { deleteResource } from "@/lib/api";
 import {
   Dialog,
   DialogTrigger,
@@ -17,21 +17,32 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { currentUserRole } from "@/lib/auth";
+import { useAuth } from "@/lib/AuthContext";
 
 export default function ResourceDetailPage() {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
+  const { user } = useAuth();
   const [resource, setResource] = useState<Resource | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    getResource(params.id).then((data) => {
-      if (data) setResource(data);
+    if (!user?.token) return;
+    getResource(user.token, params.id).then((data) => {
+      setResource(data);
+      setIsLoading(false);
     });
-  }, [params.id]);
+  }, [params.id, user]);
+
+  if (isLoading) {
+    return <div className="text-sm text-muted-foreground">Loading…</div>;
+  }
 
   if (!resource) {
     return <div className="text-sm text-red-500">Resource not found.</div>;
   }
+
+  const isInstructor = user?.role === "instructor";
 
   return (
     <div className="max-w-4xl space-y-6">
@@ -44,38 +55,13 @@ export default function ResourceDetailPage() {
         </Link>
 
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={() => {
-              const content = `Title: ${resource.title}
-                              Course: ${resource.course}
-                              Topic: ${resource.topic}
-                              Tags: ${resource.tags.join(", ")}
-                              Description: ${resource.description}`;
-
-              const blob = new Blob([content], { type: "text/plain" });
-
-              const url = URL.createObjectURL(blob);
-
-              const a = document.createElement("a");
-              a.href = url;
-
-              a.download = `${resource.title}.txt`;
-
-              a.click();
-
-              URL.revokeObjectURL(url);
-            }}
-          >
-            Download
-          </Button>
-          {currentUserRole === "instructor" && (
+          {isInstructor && (
             <Link href={`/resources/${resource.id}/edit`}>
               <Button variant="outline">Edit</Button>
             </Link>
           )}
 
-          {currentUserRole === "instructor" && (
+          {isInstructor && (
             <Dialog>
               <DialogTrigger asChild>
                 <Button variant="destructive">Delete</Button>
@@ -98,13 +84,10 @@ export default function ResourceDetailPage() {
                   <Button
                     variant="destructive"
                     onClick={async () => {
-                      await deleteResource(resource.id);
-
+                      if (!user?.token) return;
+                      await deleteResource(user.token, resource.id);
                       toast.success("Resource deleted");
-
-                      setTimeout(() => {
-                        window.location.href = "/resources";
-                      }, 800);
+                      router.push("/resources");
                     }}
                   >
                     Delete
@@ -129,48 +112,40 @@ export default function ResourceDetailPage() {
 
           <div>
             <p className="text-sm text-muted-foreground">Course</p>
-            <p>{resource.course}</p>
+            <p>{resource.courseCode}</p>
           </div>
 
           <div>
-            <p className="text-sm text-muted-foreground">Topic</p>
-            <p>{resource.topic}</p>
-          </div>
-
-          <div>
-            <p className="text-sm text-muted-foreground">Updated</p>
-            <p>{resource.updatedAt}</p>
+            <p className="text-sm text-muted-foreground">Policy</p>
+            <Badge variant="outline">{resource.policy}</Badge>
           </div>
 
           <div>
             <p className="text-sm text-muted-foreground">Tags</p>
             <div className="flex flex-wrap gap-2 mt-1">
-              {resource.tags.map((tag) => (
+              {resource.tags.length > 0 ? resource.tags.map((tag, i) => (
                 <span
-                  key={tag}
+                  key={`${tag}-${i}`}
                   className="rounded-full border px-2 py-0.5 text-xs text-muted-foreground"
                 >
                   {tag}
                 </span>
-              ))}
+              )) : <span className="text-sm text-muted-foreground">—</span>}
             </div>
           </div>
         </div>
 
         <div className="rounded-lg border p-5 space-y-4">
-          <h2 className="font-medium">Description</h2>
-          <p className="text-sm leading-6 text-muted-foreground">
-            {resource.description}
-          </p>
+          <h2 className="font-medium">File Info</h2>
 
           <div>
-            <p className="text-sm text-muted-foreground">File Type</p>
-            <p>PDF</p>
+            <p className="text-sm text-muted-foreground">Content Type</p>
+            <p>{resource.contentType}</p>
           </div>
 
           <div>
-            <p className="text-sm text-muted-foreground">Access Level</p>
-            <p>Students / TAs / Instructors</p>
+            <p className="text-sm text-muted-foreground">Object Key</p>
+            <p className="text-xs font-mono break-all text-muted-foreground">{resource.objectKey}</p>
           </div>
         </div>
       </div>

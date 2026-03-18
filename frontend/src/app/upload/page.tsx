@@ -1,43 +1,108 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { createResource } from "@/lib/api";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { getUploadUrl, createResourceOnServer, getEnrollments } from "@/lib/api";
+import { useAuth } from "@/lib/AuthContext";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { CourseEnrollment } from "@/lib/types";
+
+const POLICY_OPTIONS = [
+  { value: "STUDENT", label: "Student — visible to all enrolled users" },
+  { value: "TA", label: "TA — visible to TAs and instructors" },
+  { value: "INSTRUCTOR", label: "Instructor — visible to instructors only" },
+] as const;
 
 export default function UploadPage() {
+  const { user } = useAuth();
+  const router = useRouter();
   const [title, setTitle] = useState("");
   const [course, setCourse] = useState("");
-  const [topic, setTopic] = useState("");
+  const [instructorCourses, setInstructorCourses] = useState<CourseEnrollment[]>([]);
   const [tags, setTags] = useState("");
   const [description, setDescription] = useState("");
-  const [fileName, setFileName] = useState("");
+  const [policy, setPolicy] = useState<string>("STUDENT");
+  const [file, setFile] = useState<File | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const router = useRouter();
+  useEffect(() => {
+    if (!user?.token) return;
+    getEnrollments(user.token).then((enrollments) => {
+      setInstructorCourses(enrollments.filter((e) => e.role === "instructor"));
+    });
+  }, [user?.token]);
+
+  const tagList = tags
+    .split(",")
+    .map((t) => t.trim())
+    .filter(Boolean);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    const newResource = {
-      id: crypto.randomUUID(),
-      title,
-      course,
-      topic,
-      tags: tags
-        .split(",")
-        .map((tag) => tag.trim())
-        .filter(Boolean),
-      updatedAt: new Date().toISOString().slice(0, 10),
-      description,
-      fileName,
-    };
+    if (!user?.token) {
+      toast.error("You must be signed in to upload.");
+      return;
+    }
+    if (!file) {
+      toast.error("Please select a file to upload.");
+      return;
+    }
+    if (!title.trim() || !course.trim()) {
+      toast.error("Title and course are required.");
+      return;
+    }
 
-    await createResource(newResource);
+    setIsSubmitting(true);
+    try {
+      const contentType = file.type || "application/octet-stream";
 
-    router.push("/resources");
-    router.refresh();
+      const { url, object_key: objectKey } = await getUploadUrl(user.token, {
+        title: title.trim(),
+        courseCode: course.trim(),
+        contentType,
+        policy,
+        tags: tagList,
+        expires_in: 300,
+      });
+
+      const uploadRes = await fetch(url, {
+        method: "PUT",
+        body: file,
+        headers: { "Content-Type": contentType },
+      });
+      if (!uploadRes.ok) {
+        throw new Error(`Upload failed: ${uploadRes.status} ${uploadRes.statusText}`);
+      }
+
+      await createResourceOnServer(user.token, {
+        title: title.trim(),
+        courseCode: course.trim(),
+        contentType,
+        objectKey,
+        policy,
+        tags: tagList,
+      });
+
+      toast.success("Resource uploaded successfully.");
+      router.push("/resources");
+      router.refresh();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Upload failed.";
+      toast.error(message);
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -45,7 +110,7 @@ export default function UploadPage() {
       <div>
         <h1 className="text-2xl font-semibold">Upload Resource</h1>
         <p className="text-sm text-muted-foreground">
-          Add a new learning resource with metadata and file information.
+          Add a new learning resource with metadata and file. File is stored in DigitalOcean Spaces.
         </p>
       </div>
 
@@ -62,20 +127,35 @@ export default function UploadPage() {
         <div className="grid gap-5 md:grid-cols-2">
           <div className="space-y-2">
             <label className="text-sm font-medium">Course</label>
-            <Input
-              placeholder="e.g. ECE1779"
-              value={course}
-              onChange={(e) => setCourse(e.target.value)}
-            />
+            <Select value={course} onValueChange={setCourse}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select a course" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="PUBLIC">Public — visible to everyone</SelectItem>
+                {instructorCourses.map((c) => (
+                  <SelectItem key={c.course_id} value={c.course_code}>
+                    {c.course_code} — {c.course_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">Topic</label>
-            <Input
-              placeholder="e.g. Docker"
-              value={topic}
-              onChange={(e) => setTopic(e.target.value)}
-            />
+            <label className="text-sm font-medium">Visibility policy</label>
+            <Select value={policy} onValueChange={setPolicy}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select policy" />
+              </SelectTrigger>
+              <SelectContent>
+                {POLICY_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
@@ -105,17 +185,19 @@ export default function UploadPage() {
           <label className="text-sm font-medium">File</label>
           <Input
             type="file"
-            onChange={(e) => setFileName(e.target.files?.[0]?.name || "")}
+            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
           />
-          {fileName && (
+          {file && (
             <p className="text-sm text-muted-foreground">
-              Selected file: {fileName}
+              Selected: {file.name} ({(file.size / 1024).toFixed(1)} KB)
             </p>
           )}
         </div>
 
         <div className="flex justify-end">
-          <Button type="submit">Upload Resource</Button>
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Uploading…" : "Upload Resource"}
+          </Button>
         </div>
       </form>
     </div>

@@ -1,3 +1,5 @@
+require("dotenv").config();
+
 const path = require("path");
 const grpc = require("@grpc/grpc-js");
 const protoLoader = require("@grpc/proto-loader");
@@ -41,7 +43,7 @@ function createServer() {
 function startServer(port = PORT) {
   return new Promise((resolve, reject) => {
     const { server, handlers } = createServer();
-    server.bindAsync(`0.0.0.0:${port}`, grpc.ServerCredentials.createInsecure(), (err, boundPort) => {
+    server.bindAsync(`localhost:${port}`, grpc.ServerCredentials.createInsecure(), (err, boundPort) => {
       if (err) {
         reject(err);
         return;

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/AuthContext";
 import { useEffect, useState } from "react";
 import { authFetch } from "@/lib/api";
@@ -41,6 +41,7 @@ const NAV_ITEMS = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const role = user?.role ?? "student";
 
@@ -146,6 +147,23 @@ export default function Sidebar() {
           </div>
         </div>
 
+        {/* Public resources — always visible */}
+        <Separator />
+        <div>
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2">
+            Public
+          </p>
+          <Link
+            href="/resources?course=PUBLIC"
+            className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm transition hover:bg-muted ${
+              pathname === "/resources" && searchParams.get("course") === "PUBLIC" ? "bg-muted font-medium" : ""
+            }`}
+          >
+            <BookOpen className="size-3.5 shrink-0 text-muted-foreground" />
+            <span>Public Resources</span>
+          </Link>
+        </div>
+
         {/* Courses — students only */}
         {role === "student" && (
           <>
@@ -171,17 +189,21 @@ export default function Sidebar() {
                   {enrollments.map((e) => (
                     <div
                       key={e.course_id}
-                      className="group flex items-center justify-between rounded-md px-3 py-2 hover:bg-muted"
+                      className="group flex items-center justify-between rounded-md hover:bg-muted"
                     >
-                      <div className="flex items-center gap-2 min-w-0">
+                      <Link
+                        href={`/resources?course=${encodeURIComponent(e.course_code)}`}
+                        className={`flex flex-1 items-center gap-2 min-w-0 px-3 py-2 ${
+                          pathname === "/resources" ? "" : ""
+                        }`}
+                        title={e.course_name}
+                      >
                         <BookOpen className="size-3.5 shrink-0 text-muted-foreground" />
-                        <span className="text-sm truncate" title={e.course_name}>
-                          {e.course_code}
-                        </span>
-                      </div>
+                        <span className="text-sm truncate">{e.course_code}</span>
+                      </Link>
                       <button
                         onClick={() => handleUnenroll(e.course_code)}
-                        className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all"
+                        className="opacity-0 group-hover:opacity-100 mr-2 text-muted-foreground hover:text-destructive transition-all"
                         title="Leave course"
                       >
                         <X className="size-3.5" />

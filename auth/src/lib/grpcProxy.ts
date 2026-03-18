@@ -2,10 +2,11 @@ import type { Request, Response } from "express";
 import grpc from "@grpc/grpc-js";
 import type { GrpcCall } from "../types/grpc";
 
-/** Build gRPC metadata with user id for backend services. */
-export function metadataForUser(userId: string): grpc.Metadata {
+/** Build gRPC metadata with user id (and optional role) for backend services. */
+export function metadataForUser(userId: string, role?: string): grpc.Metadata {
   const md = new grpc.Metadata();
   md.add("x-user-id", userId);
+  if (role) md.add("x-user-role", role);
   return md;
 }
 

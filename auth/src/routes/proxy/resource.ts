@@ -75,7 +75,7 @@ router.get("/list", async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
-  const metadata = req.user ? metadataForUser(req.user.id) : undefined;
+  const metadata = req.user ? metadataForUser(req.user.id, req.user.role) : undefined;
   try {
     const data = await resourceListResources({ courseCode }, metadata);
     res.json(data);

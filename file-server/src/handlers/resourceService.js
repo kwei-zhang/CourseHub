@@ -280,6 +280,16 @@ function recordAccessLogHandler(call, callback) {
     });
 }
 
+// Policies visible per role (role-based minimum access):
+//   student   → STUDENT only
+//   ta        → STUDENT + TA
+//   instructor → all
+const POLICIES_BY_ROLE = {
+  student: ["STUDENT"],
+  ta: ["STUDENT", "TA"],
+  instructor: ["STUDENT", "TA", "INSTRUCTOR"],
+};
+
 function listResourcesHandler(call, callback) {
   const courseCode = call.request.courseCode;
   if (!courseCode) {
@@ -294,11 +304,21 @@ function listResourcesHandler(call, callback) {
     return;
   }
 
+  const isPublic = courseCode === "PUBLIC";
+
+  let where;
+  if (isPublic) {
+    // Public resources are visible to everyone regardless of role
+    where = { courseCode };
+  } else {
+    const roleValues = call.metadata.get("x-user-role");
+    const role = roleValues.length > 0 ? roleValues[0] : "student";
+    const allowedPolicies = POLICIES_BY_ROLE[role] ?? POLICIES_BY_ROLE.student;
+    where = { courseCode, policy: { in: allowedPolicies } };
+  }
+
   prisma.resource
-    .findMany({
-      where: { courseCode },
-      orderBy: { createdAt: "desc" },
-    })
+    .findMany({ where, orderBy: { createdAt: "desc" } })
     .then((resources) => callback(null, { resources: resources.map(mapResourceToGrpcResponse) }))
     .catch((err) => {
       console.error("ListResources error:", err);

@@ -6,60 +6,70 @@ import { getResource, updateResource } from "@/lib/api";
 import { Resource } from "@/lib/types";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import Link from "next/link";
+import { toast } from "sonner";
+import { useAuth } from "@/lib/AuthContext";
+
+const POLICY_OPTIONS = [
+  { value: "STUDENT", label: "Student — visible to all enrolled users" },
+  { value: "TA", label: "TA — visible to TAs and instructors" },
+  { value: "INSTRUCTOR", label: "Instructor — visible to instructors only" },
+] as const;
 
 export default function EditResourcePage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const { user } = useAuth();
 
   const [resource, setResource] = useState<Resource | null>(null);
-
   const [title, setTitle] = useState("");
-  const [course, setCourse] = useState("");
-  const [topic, setTopic] = useState("");
+  const [courseCode, setCourseCode] = useState("");
+  const [policy, setPolicy] = useState("LECTURE");
   const [tags, setTags] = useState("");
-  const [description, setDescription] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    getResource(params.id).then((data) => {
+    if (!user?.token) return;
+    getResource(user.token, params.id).then((data) => {
       if (!data) return;
-
       setResource(data);
       setTitle(data.title);
-      setCourse(data.course);
-      setTopic(data.topic);
+      setCourseCode(data.courseCode);
+      setPolicy(data.policy);
       setTags(data.tags.join(", "));
-      setDescription(data.description);
     });
-  }, [params.id]);
+  }, [params.id, user]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!resource || !user?.token) return;
 
-    if (!resource) return;
-
-    const updatedResource: Resource = {
-      ...resource,
-      title,
-      course,
-      topic,
-      tags: tags
-        .split(",")
-        .map((tag) => tag.trim())
-        .filter(Boolean),
-      description,
-      updatedAt: new Date().toISOString().slice(0, 10),
-    };
-
-    await updateResource(updatedResource);
-
-    router.push(`/resources/${resource.id}`);
-    router.refresh();
+    setIsSubmitting(true);
+    try {
+      await updateResource(user.token, resource.id, {
+        title: title.trim(),
+        courseCode: courseCode.trim(),
+        policy,
+        tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
+      });
+      toast.success("Resource updated.");
+      router.push(`/resources/${resource.id}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update resource.");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   if (!resource) {
-    return <div className="text-sm text-red-500">Resource not found.</div>;
+    return <div className="text-sm text-muted-foreground">Loading…</div>;
   }
 
   return (
@@ -89,30 +99,30 @@ export default function EditResourcePage() {
         <div className="grid gap-5 md:grid-cols-2">
           <div className="space-y-2">
             <label className="text-sm font-medium">Course</label>
-            <Input value={course} onChange={(e) => setCourse(e.target.value)} />
+            <Input value={courseCode} onChange={(e) => setCourseCode(e.target.value)} />
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">Topic</label>
-            <Input value={topic} onChange={(e) => setTopic(e.target.value)} />
+            <label className="text-sm font-medium">Visibility policy</label>
+            <Select value={policy} onValueChange={setPolicy}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select policy" />
+              </SelectTrigger>
+              <SelectContent>
+                {POLICY_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
         <div className="space-y-2">
           <label className="text-sm font-medium">Tags</label>
           <Input value={tags} onChange={(e) => setTags(e.target.value)} />
-          <p className="text-xs text-muted-foreground">
-            Separate tags with commas.
-          </p>
-        </div>
-
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Description</label>
-          <Textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="min-h-[120px]"
-          />
+          <p className="text-xs text-muted-foreground">Separate tags with commas.</p>
         </div>
 
         <div className="flex justify-end gap-2">
@@ -121,8 +131,9 @@ export default function EditResourcePage() {
               Cancel
             </Button>
           </Link>
-
-          <Button type="submit">Save Changes</Button>
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Saving…" : "Save Changes"}
+          </Button>
         </div>
       </form>
     </div>

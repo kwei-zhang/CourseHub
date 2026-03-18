@@ -4,13 +4,26 @@ const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const REGION = process.env.SPACES_REGION || "tor1";
 const ENDPOINT = process.env.SPACES_ENDPOINT || `https://${REGION}.digitaloceanspaces.com`;
 const BUCKET = process.env.SPACES_BUCKET;
+const KEY = process.env.SPACES_KEY;
+const SECRET = process.env.SPACES_SECRET;
+
+if (!BUCKET || !KEY || !SECRET) {
+  const missing = [].concat(
+    !BUCKET ? "SPACES_BUCKET" : [],
+    !KEY ? "SPACES_KEY" : [],
+    !SECRET ? "SPACES_SECRET" : []
+  );
+  throw new Error(
+    `DigitalOcean Spaces config missing. Set in .env: ${missing.join(", ")}. See .env.example.`
+  );
+}
 
 const s3 = new S3Client({
   region: REGION,
   endpoint: ENDPOINT,
   credentials: {
-    accessKeyId: process.env.SPACES_KEY,
-    secretAccessKey: process.env.SPACES_SECRET,
+    accessKeyId: KEY,
+    secretAccessKey: SECRET,
   },
   forcePathStyle: true,
 });

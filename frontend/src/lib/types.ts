@@ -1,10 +1,17 @@
 export type Resource = {
   id: string;
   title: string;
-  course: string;
-  topic: string;
+  courseCode: string;
+  contentType: string;
+  objectKey: string;
+  policy: string;
   tags: string[];
-  updatedAt: string;
-  description: string;
-  fileName?: string;
+  uploaderId: string;
+};
+
+export type CourseEnrollment = {
+  course_id: string;
+  course_code: string;
+  course_name: string;
+  role: string;
 };

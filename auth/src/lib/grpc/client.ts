@@ -22,7 +22,7 @@ const proto = (grpc.loadPackageDefinition(packageDefinition) as unknown as { ece
   .ece1779;
 
 const userTarget = process.env.USER_SERVER ?? "localhost:5001";
-const resourceTarget = process.env.RESOURCE_SERVER ?? userTarget;
+const resourceTarget = process.env.RESOURCE_SERVER ?? fileTarget;
 const fileTarget = process.env.FILE_SERVER ?? "localhost:5002";
 const systemTarget = process.env.SYSTEM_SERVER ?? "localhost:5003";
 

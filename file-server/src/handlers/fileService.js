@@ -111,31 +111,35 @@ function createFileServiceHandlers({
         return;
       }
 
-      if (resource.policy !== VisibilityPolicy.LECTURE && resource.policy !== VisibilityPolicy.ASSIGNMENT) {
-        // Enforce course enrollment check
+      // Public resources skip enrollment and policy checks
+      if (resource.courseCode !== "PUBLIC") {
         if (typeof checkEnrollment !== "function") {
-           fail(grpc.status.INTERNAL, "Enrollment checking is unavailable");
-           return;
+          fail(grpc.status.INTERNAL, "Enrollment checking is unavailable");
+          return;
         }
-        
+
         const enrollment = await checkEnrollment(requesterUserId, resource.courseCode);
         if (!enrollment?.is_enrolled) {
           fail(grpc.status.PERMISSION_DENIED, `Not enrolled in course ${resource.courseCode}`);
           return;
         }
 
-        if (resource.policy === VisibilityPolicy.HIGHLY_SENSITIVE) {
-           fail(grpc.status.PERMISSION_DENIED, "Download is not allowed for highly sensitive policies");
-           return;
+        const enrollmentRole = enrollment.role; // "student" | "ta" | "instructor"
+
+        if (resource.policy === VisibilityPolicy.INSTRUCTOR) {
+          if (enrollmentRole !== "instructor") {
+            fail(grpc.status.PERMISSION_DENIED, "Download requires Instructor role");
+            return;
+          }
+        } else if (resource.policy === VisibilityPolicy.TA) {
+          if (enrollmentRole !== "ta" && enrollmentRole !== "instructor") {
+            fail(grpc.status.PERMISSION_DENIED, "Download requires TA or Instructor role");
+            return;
+          }
         }
-        
-        if (resource.policy === VisibilityPolicy.EXAM || resource.policy === VisibilityPolicy.SOLUTION) {
-           if (enrollment.role !== "ta" && enrollment.role !== "instructor") {
-             fail(grpc.status.PERMISSION_DENIED, `Download for policy ${resource.policy} requires TA or Instructor role`);
-             return;
-           }
-        }
-      }      const url = await presignDownload({ objectKey: resource.objectKey, expiresIn: expiresIn || 300 });
+      }
+
+      const url = await presignDownload({ objectKey: resource.objectKey, expiresIn: expiresIn || 300 });
       safeRecordAccessLog({
         userId: requesterUserId,
         resourceId,
