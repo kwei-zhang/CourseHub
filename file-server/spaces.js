@@ -25,7 +25,7 @@ const s3 = new S3Client({
     accessKeyId: KEY,
     secretAccessKey: SECRET,
   },
-  forcePathStyle: true,
+  forcePathStyle: false,
 });
 
 async function presignUpload({ objectKey, contentType, expiresIn = 300 }) {
@@ -33,7 +33,7 @@ async function presignUpload({ objectKey, contentType, expiresIn = 300 }) {
     Bucket: BUCKET,
     Key: objectKey,
     ContentType: contentType,
-    ACL: "private",
+    // ACL: "private",
   });
   return getSignedUrl(s3, cmd, { expiresIn });
 }

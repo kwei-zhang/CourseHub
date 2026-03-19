@@ -6,9 +6,11 @@ COPY proto /app/proto
 COPY file-server /app/file-server
 
 WORKDIR /app/file-server
-RUN npm install && npx prisma generate
 
 ENV NODE_ENV=production
+
+RUN npm ci && npx prisma generate
+
 EXPOSE 5002
 
-CMD ["node", "index.js"]
+CMD ["sh", "-c", "npx prisma db push --accept-data-loss && node index.js"]

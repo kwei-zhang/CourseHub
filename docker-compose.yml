@@ -17,7 +17,12 @@ services:
     ports:
       - "5002:5002"
     environment:
-      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_URL: ${FILE_SERVER_DATABASE_URL}
+      SPACES_BUCKET: ${SPACES_BUCKET}
+      SPACES_KEY: ${SPACES_KEY}
+      SPACES_SECRET: ${SPACES_SECRET}
+      SPACES_REGION: ${SPACES_REGION:-tor1}
+      SPACES_ENDPOINT: ${SPACES_ENDPOINT:-https://tor1.digitaloceanspaces.com}
     restart: unless-stopped
 
   system-server:
@@ -28,20 +33,36 @@ services:
       - "5003:5003"
     restart: unless-stopped
 
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        NEXT_PUBLIC_AUTH_URL: ${NEXT_PUBLIC_AUTH_URL:-http://localhost:4000}
+    ports:
+      - "3000:3000"
+    depends_on:
+      auth:
+        condition: service_started
+    restart: unless-stopped
+
   auth:
     build:
       context: .
       dockerfile: auth/Dockerfile
     ports:
-      - "3000:3000"
+      - "4000:4000"
     environment:
+      PORT: 4000
       DATABASE_URL: ${DATABASE_URL}
       PROTO_PATH: /app/proto/services.proto
       USER_SERVER: user-server:5001
       FILE_SERVER: file-server:5002
+      RESOURCE_SERVER: file-server:5002
       SYSTEM_SERVER: system-server:5003
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-replace-me-with-32-char-secret-min}
-      BETTER_AUTH_URL: http://localhost:3000
+      BETTER_AUTH_URL: http://localhost:4000
+      FRONTEND_URL: http://localhost:3000
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
     depends_on:

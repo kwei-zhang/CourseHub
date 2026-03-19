@@ -5,7 +5,6 @@ node_modules
 README.md
 LICENSE
 *.md
-frontend
 
 # Env files (secrets stay on host; use docker compose env or -e)
 .env

@@ -43,7 +43,7 @@ function createServer() {
 function startServer(port = PORT) {
   return new Promise((resolve, reject) => {
     const { server, handlers } = createServer();
-    server.bindAsync(`localhost:${port}`, grpc.ServerCredentials.createInsecure(), (err, boundPort) => {
+    server.bindAsync(`0.0.0.0:${port}`, grpc.ServerCredentials.createInsecure(), (err, boundPort) => {
       if (err) {
         reject(err);
         return;

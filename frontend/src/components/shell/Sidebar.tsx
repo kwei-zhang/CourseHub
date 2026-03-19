@@ -33,7 +33,7 @@ interface CourseInfo {
 }
 
 const NAV_ITEMS = [
-  { href: "/resources", label: "Resources", roles: ["student", "ta", "instructor"] },
+  { href: "/resources", label: "Resources", roles: ["student", "ta"] },
   { href: "/courses", label: "Courses", roles: ["instructor"] },
   { href: "/upload", label: "Upload", roles: ["ta", "instructor"] },
   { href: "/manage", label: "Manage", roles: ["ta", "instructor"] },
