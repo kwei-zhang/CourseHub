@@ -16,6 +16,10 @@ spec:
       containers:
         - name: auth
           image: REPLACE_WITH_AUTH_IMAGE
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
           ports:
             - containerPort: 4000
           livenessProbe:
