@@ -33,3 +33,4 @@ Thumbs.db
 
 # Optional: local overrides
 *.local
+k8s/secrets.yaml
