@@ -103,3 +103,45 @@ Replace these placeholders in Kubernetes manifests:
 - `REPLACE_WITH_USER_SERVER_IMAGE`
 - `REPLACE_WITH_FILE_SERVER_IMAGE`
 - `REPLACE_WITH_SYSTEM_SERVER_IMAGE`
+
+## Final deployment replacement checklist
+
+Before deploying to DigitalOcean Kubernetes, replace or prepare the following:
+
+### Kubernetes image placeholders
+- `REPLACE_WITH_FRONTEND_IMAGE`
+- `REPLACE_WITH_AUTH_IMAGE`
+- `REPLACE_WITH_USER_SERVER_IMAGE`
+- `REPLACE_WITH_FILE_SERVER_IMAGE`
+- `REPLACE_WITH_SYSTEM_SERVER_IMAGE`
+
+### Ingress / public URL placeholders
+- `REPLACE_WITH_DOMAIN`
+- `REPLACE_WITH_REAL_URL`
+
+### Runtime secret values
+Prepare a local `k8s/secrets.yaml` (not committed) with:
+- `DATABASE_URL`
+- `FILE_SERVER_DATABASE_URL`
+- `BETTER_AUTH_SECRET`
+- `BETTER_AUTH_URL`
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
+- `SPACES_BUCKET`
+- `SPACES_KEY`
+- `SPACES_SECRET`
+- `SPACES_REGION`
+- `SPACES_ENDPOINT`
+
+### Suggested apply order
+1. `k8s/namespace.yaml`
+2. `k8s/secrets.yaml`
+3. `k8s/postgres-pvc.yaml`
+4. `k8s/postgres-deployment.yaml`
+5. `k8s/postgres-service.yaml`
+6. backend deployments and services
+7. frontend deployment and service
+8. `k8s/ingress.yaml`
+9. `k8s/auth-hpa.yaml`
+10. `k8s/frontend-hpa.yaml`
+11. `k8s/db-backup-cronjob.yaml`
