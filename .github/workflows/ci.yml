@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - prod
+      - lihang-deploy-work
+  pull_request:
+
+jobs:
+  build-and-validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Validate docker-compose.local.yml
+        run: docker compose -f docker-compose.local.yml config
+
+      - name: Validate docker-compose.yml
+        run: docker compose -f docker-compose.yml config
+
+      - name: Build auth image
+        run: docker build -f auth/Dockerfile -t auth-test .
+
+      - name: Build user-server image
+        run: docker build -f user-server/Dockerfile -t user-server-test .
+
+      - name: Build file-server image
+        run: docker build -f file-server/Dockerfile -t file-server-test .
+
+      - name: Build system-server image
+        run: docker build -f system-server/Dockerfile -t system-server-test .
+
+      - name: Build frontend image
+        run: docker build --build-arg NEXT_PUBLIC_AUTH_URL=http://localhost:4000 -f frontend/Dockerfile -t frontend-test .
