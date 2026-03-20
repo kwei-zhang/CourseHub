@@ -86,3 +86,20 @@ In that case:
 - `NEXT_PUBLIC_AUTH_URL` should also be set to `https://<domain>`
 
 Do not use `:4000` in the public URL if auth is exposed through ingress path routing.
+
+## Suggested image naming convention
+
+If using DigitalOcean Container Registry, replace image placeholders with:
+
+- `registry.digitalocean.com/<registry-name>/frontend:latest`
+- `registry.digitalocean.com/<registry-name>/auth:latest`
+- `registry.digitalocean.com/<registry-name>/user-server:latest`
+- `registry.digitalocean.com/<registry-name>/file-server:latest`
+- `registry.digitalocean.com/<registry-name>/system-server:latest`
+
+Replace these placeholders in Kubernetes manifests:
+- `REPLACE_WITH_FRONTEND_IMAGE`
+- `REPLACE_WITH_AUTH_IMAGE`
+- `REPLACE_WITH_USER_SERVER_IMAGE`
+- `REPLACE_WITH_FILE_SERVER_IMAGE`
+- `REPLACE_WITH_SYSTEM_SERVER_IMAGE`
