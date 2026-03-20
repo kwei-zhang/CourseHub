@@ -74,3 +74,15 @@ Check or replace:
 - Verify DigitalOcean Kubernetes ingress / load balancer behavior
 - Validate auth public URL in deployed environment
 - Optionally extend GitHub Actions into full CD
+
+## Auth public URL
+
+If deployment uses a single ingress host with path routing:
+- frontend is served from `https://<domain>`
+- auth is reached through `https://<domain>/api/...`
+
+In that case:
+- `BETTER_AUTH_URL` should be set to `https://<domain>`
+- `NEXT_PUBLIC_AUTH_URL` should also be set to `https://<domain>`
+
+Do not use `:4000` in the public URL if auth is exposed through ingress path routing.
