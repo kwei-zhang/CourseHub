@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: auth
-          image: REPLACE_WITH_AUTH_IMAGE
+          image: registry.digitalocean.com/ece1779-lrms/auth:latest
           resources:
             requests:
               cpu: "100m"
@@ -35,6 +35,10 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 10
           env:
+            - name: PORT
+              value: "4000"
+            - name: FRONTEND_URL
+              value: "http://lrms.localtest.me"
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:

@@ -4,8 +4,9 @@ metadata:
   name: lrms-ingress
   namespace: lrms
 spec:
+  ingressClassName: nginx
   rules:
-    - host: REPLACE_WITH_DOMAIN
+    - host: lrms.localtest.me
       http:
         paths:
           - path: /

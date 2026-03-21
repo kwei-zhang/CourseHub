@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: user-server
-          image: REPLACE_WITH_USER_SERVER_IMAGE
+          image: registry.digitalocean.com/ece1779-lrms/user-server:latest
           ports:
             - containerPort: 5001
           env:

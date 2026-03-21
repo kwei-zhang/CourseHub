@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: REPLACE_WITH_FRONTEND_IMAGE
+          image: registry.digitalocean.com/ece1779-lrms/frontend:latest
           resources:
             requests:
               cpu: "100m"

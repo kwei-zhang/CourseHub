@@ -9,7 +9,7 @@ COPY auth/prisma ./prisma
 COPY auth/src ./src
 
 # Install all deps (includes tsx + prisma CLI as devDeps)
-RUN npm ci
+RUN npm install
 
 RUN npx prisma generate
 
