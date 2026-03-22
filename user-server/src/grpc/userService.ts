@@ -22,6 +22,7 @@ import type {
   CreateCourseRequest,
   DeleteCourseRequest,
   DeleteCourseResponse,
+  ListAllUsersResponse,
 } from "../types";
 
 function mapUserToGrpcResponse(user: User): GetUserGrpcResponse {
@@ -447,6 +448,32 @@ function deleteCourseHandler(
     });
 }
 
+function listAllUsersHandler(
+  _call: grpc.ServerUnaryCall<Record<string, never>, ListAllUsersResponse>,
+  callback: grpc.sendUnaryData<ListAllUsersResponse>
+): void {
+  if (!prisma) {
+    callback({ code: grpc.status.UNAVAILABLE, message: "Database not configured" }, undefined);
+    return;
+  }
+  prisma.user
+    .findMany({ orderBy: { createdAt: "asc" } })
+    .then((users) => {
+      callback(null, {
+        users: users.map((u) => ({
+          id: u.id,
+          name: u.name,
+          email: u.email,
+          role: u.role ?? "user",
+        })),
+      });
+    })
+    .catch((err) => {
+      console.error("ListAllUsers error:", err);
+      callback({ code: grpc.status.INTERNAL, message: err instanceof Error ? err.message : "DB error" }, undefined);
+    });
+}
+
 export const userServiceHandlers = {
   get,
   getUser,
@@ -461,4 +488,5 @@ export const userServiceHandlers = {
   listCourses: listCoursesHandler,
   createCourse: createCourseHandler,
   deleteCourse: deleteCourseHandler,
+  listAllUsers: listAllUsersHandler,
 };

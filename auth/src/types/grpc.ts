@@ -139,6 +139,11 @@ export type CreateCourseRequest = { code: string; name: string; instructor_id: s
 export type DeleteCourseRequest = { code: string };
 export type DeleteCourseResponse = { ok: boolean };
 
+export type UserInfo = { id: string; name: string; email: string; role: string };
+export type ListAllUsersResponse = { users: UserInfo[] };
+
+export type ListAllResourcesResponse = { resources: ResourceResponse[] };
+
 /** Loaded proto package with service constructors. */
 export interface Ece1779Package {
   UserService: grpc.ServiceClientConstructor;

@@ -28,6 +28,7 @@ service UserService {
   rpc ListCourses(ListCoursesRequest) returns (ListCoursesResponse);
   rpc CreateCourse(CreateCourseRequest) returns (CourseInfo);
   rpc DeleteCourse(DeleteCourseRequest) returns (DeleteCourseResponse);
+  rpc ListAllUsers(ListAllUsersRequest) returns (ListAllUsersResponse);
 }
 
 message GetUserRequest {
@@ -148,6 +149,19 @@ message DeleteCourseResponse {
   bool ok = 1;
 }
 
+message ListAllUsersRequest {}
+
+message UserInfo {
+  string id = 1;
+  string name = 2;
+  string email = 3;
+  string role = 4;
+}
+
+message ListAllUsersResponse {
+  repeated UserInfo users = 1;
+}
+
 // ---------------------------------------------------------------------------
 // ResourceService
 // ---------------------------------------------------------------------------
@@ -217,10 +231,14 @@ enum AccessAction {
   RESOURCE_DELETED = 5;
 }
 
+message ListAllResourcesRequest {}
+message ListAllResourcesResponse { repeated Resource resources = 1; }
+
 service ResourceService {
   rpc CreateResource(CreateResourceRequest) returns (Resource);
   rpc GetResource(GetResourceRequest) returns (Resource);
   rpc ListResources(ListResourcesRequest) returns (ListResourcesResponse);
+  rpc ListAllResources(ListAllResourcesRequest) returns (ListAllResourcesResponse);
   rpc UpdateResource(UpdateResourceRequest) returns (Resource);
   rpc DeleteResource(DeleteResourceRequest) returns (DeleteResourceResponse);
 

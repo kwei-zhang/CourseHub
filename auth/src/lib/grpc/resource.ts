@@ -5,6 +5,7 @@ import type {
   GetResourceRequest,
   ListResourcesRequest,
   ListResourcesResponse,
+  ListAllResourcesResponse,
   UpdateResourceRequest,
   DeleteResourceRequest,
   DeleteResourceResponse,
@@ -91,6 +92,19 @@ export function resourceDeleteResource(
       (err: Error | null, res?: DeleteResourceResponse) => {
         if (err) reject(err);
         else resolve(res ?? { id: request.id, deleted: false });
+      }
+    );
+  });
+}
+
+export function resourceListAllResources(metadata?: grpc.Metadata): Promise<ListAllResourcesResponse> {
+  return new Promise((resolve, reject) => {
+    resourceClient.listAllResources(
+      {},
+      metadata ?? new grpc.Metadata(),
+      (err: Error | null, res?: ListAllResourcesResponse) => {
+        if (err) reject(err);
+        else resolve(res ?? { resources: [] });
       }
     );
   });

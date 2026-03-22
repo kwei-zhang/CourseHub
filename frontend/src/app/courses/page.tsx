@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/AuthContext";
-import { authFetch } from "@/lib/api";
+import { authFetch, readAuthJson } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -47,7 +47,11 @@ export default function CoursesPage() {
     if (!user) return;
     try {
       const res = await authFetch("/user/enrollments", user.token);
-      const d = await res.json();
+      if (!res.ok) {
+        toast.error("Could not load courses.");
+        return;
+      }
+      const d = await readAuthJson<{ enrollments?: Course[] }>(res);
       const instructorCourses = (d.enrollments ?? []).filter(
         (e: Course) => e.role === "instructor"
       );
@@ -70,7 +74,7 @@ export default function CoursesPage() {
         method: "POST",
         body: JSON.stringify({ code: code.trim().toUpperCase(), name: name.trim() }),
       });
-      const d = await res.json();
+      const d = await readAuthJson<{ error?: string; code?: string }>(res);
       if (!res.ok) {
         toast.error(d.error ?? "Failed to create course.");
         return;
@@ -95,7 +99,7 @@ export default function CoursesPage() {
         method: "DELETE",
       });
       if (!res.ok) {
-        const d = await res.json();
+        const d = await readAuthJson<{ error?: string }>(res);
         toast.error(d.error ?? "Failed to delete course.");
         return;
       }

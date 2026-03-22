@@ -329,11 +329,32 @@ function listResourcesHandler(call, callback) {
     });
 }
 
+function listAllResourcesHandler(call, callback) {
+  if (!prisma) {
+    callback(
+      { code: grpc.status.UNAVAILABLE, message: "Database not configured (DATABASE_URL required)" },
+      undefined
+    );
+    return;
+  }
+  prisma.resource
+    .findMany({ orderBy: { createdAt: "desc" } })
+    .then((resources) => callback(null, { resources: resources.map(mapResourceToGrpcResponse) }))
+    .catch((err) => {
+      console.error("ListAllResources error:", err);
+      callback(
+        { code: grpc.status.INTERNAL, message: err instanceof Error ? err.message : "Database error" },
+        undefined
+      );
+    });
+}
+
 function createResourceServiceHandlers() {
   return {
     createResource: createResourceHandler,
     getResource: getResourceHandler,
     listResources: listResourcesHandler,
+    listAllResources: listAllResourcesHandler,
     updateResource: updateResourceHandler,
     deleteResource: deleteResourceHandler,
     recordAccessLog: recordAccessLogHandler,
