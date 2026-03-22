@@ -38,7 +38,7 @@ export function LoginForm() {
     try {
       const endpoint = isLogin ? "sign-in/email" : "sign-up/email";
       const body = isLogin ? { email, password } : { email, password, name, role };
-      const res = await fetch(`${AUTH_URL}/api/auth/${endpoint}`, {
+      const res = await fetch(`${AUTH_URL}/auth/${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
