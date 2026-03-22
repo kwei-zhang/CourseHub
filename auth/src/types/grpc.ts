@@ -143,6 +143,55 @@ export type UserInfo = { id: string; name: string; email: string; role: string }
 export type ListAllUsersResponse = { users: UserInfo[] };
 
 export type ListAllResourcesResponse = { resources: ResourceResponse[] };
+export type RecordMetricEventRequest = {
+  service_name: string;
+  route_key: string;
+  status_code: number;
+  latency_ms: number;
+  occurred_at_ms: number | string;
+};
+export type RecordMetricEventResponse = { ok: boolean };
+export type ServiceMetricSummary = {
+  service_name: string;
+  request_count: number | string;
+  error_count: number | string;
+  error_rate_pct: number;
+  p95_latency_ms: number;
+};
+export type GetMetricsOverviewRequest = { window_minutes?: number };
+export type GetMetricsOverviewResponse = {
+  window_minutes: number;
+  request_count: number | string;
+  error_count: number | string;
+  error_rate_pct: number;
+  p95_latency_ms: number;
+  services: ServiceMetricSummary[];
+};
+export type GetMetricsTimeseriesRequest = {
+  metric: string;
+  service_name?: string;
+  window_minutes?: number;
+  step_minutes?: number;
+};
+export type MetricsPoint = { ts_ms: number | string; value: number };
+export type GetMetricsTimeseriesResponse = {
+  metric: string;
+  service_name: string;
+  window_minutes: number;
+  step_minutes: number;
+  points: MetricsPoint[];
+};
+export type ListIncidentsRequest = { window_minutes?: number };
+export type Incident = {
+  id: string;
+  source: string;
+  severity: string;
+  status: string;
+  title: string;
+  message: string;
+  started_at_ms: number | string;
+};
+export type ListIncidentsResponse = { incidents: Incident[] };
 
 /** Loaded proto package with service constructors. */
 export interface Ece1779Package {

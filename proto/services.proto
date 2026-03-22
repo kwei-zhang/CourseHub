@@ -283,4 +283,79 @@ service FileService {
 // ---------------------------------------------------------------------------
 service SystemService {
   rpc Get(GetRequest) returns (GetResponse);
+  rpc RecordMetricEvent(RecordMetricEventRequest) returns (RecordMetricEventResponse);
+  rpc GetMetricsOverview(GetMetricsOverviewRequest) returns (GetMetricsOverviewResponse);
+  rpc GetMetricsTimeseries(GetMetricsTimeseriesRequest) returns (GetMetricsTimeseriesResponse);
+  rpc ListIncidents(ListIncidentsRequest) returns (ListIncidentsResponse);
+}
+
+message RecordMetricEventRequest {
+  string service_name = 1;
+  string route_key = 2;
+  int32 status_code = 3;
+  int32 latency_ms = 4;
+  int64 occurred_at_ms = 5;
+}
+
+message RecordMetricEventResponse {
+  bool ok = 1;
+}
+
+message GetMetricsOverviewRequest {
+  int32 window_minutes = 1;
+}
+
+message ServiceMetricSummary {
+  string service_name = 1;
+  int64 request_count = 2;
+  int64 error_count = 3;
+  double error_rate_pct = 4;
+  double p95_latency_ms = 5;
+}
+
+message GetMetricsOverviewResponse {
+  int32 window_minutes = 1;
+  int64 request_count = 2;
+  int64 error_count = 3;
+  double error_rate_pct = 4;
+  double p95_latency_ms = 5;
+  repeated ServiceMetricSummary services = 6;
+}
+
+message GetMetricsTimeseriesRequest {
+  string metric = 1;
+  string service_name = 2;
+  int32 window_minutes = 3;
+  int32 step_minutes = 4;
+}
+
+message MetricsPoint {
+  int64 ts_ms = 1;
+  double value = 2;
+}
+
+message GetMetricsTimeseriesResponse {
+  string metric = 1;
+  string service_name = 2;
+  int32 window_minutes = 3;
+  int32 step_minutes = 4;
+  repeated MetricsPoint points = 5;
+}
+
+message ListIncidentsRequest {
+  int32 window_minutes = 1;
+}
+
+message Incident {
+  string id = 1;
+  string source = 2;
+  string severity = 3;
+  string status = 4;
+  string title = 5;
+  string message = 6;
+  int64 started_at_ms = 7;
+}
+
+message ListIncidentsResponse {
+  repeated Incident incidents = 1;
 }

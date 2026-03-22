@@ -3,10 +3,17 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/lib/AuthContext";
 import { useRouter } from "next/navigation";
-import { authFetch, readAuthJson } from "@/lib/api";
+import {
+  authFetch,
+  getAdminIncidents,
+  getAdminMetricsOverview,
+  getAdminMetricsTimeseries,
+  readAuthJson,
+} from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import type { Incident, MetricsOverview, MetricsTimeseries } from "@/lib/types";
 
 type Course = { id: string; code: string; name: string };
 type Resource = {
@@ -22,7 +29,7 @@ type Resource = {
 export default function AdminPage() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
-  const [tab, setTab] = useState<"courses" | "resources" | "announcements">("courses");
+  const [tab, setTab] = useState<"courses" | "resources" | "announcements" | "monitoring">("courses");
 
   const [courses, setCourses] = useState<Course[]>([]);
   const [coursesLoading, setCoursesLoading] = useState(false);
@@ -36,6 +43,11 @@ export default function AdminPage() {
   const [body, setBody] = useState("");
   const [announcementStatus, setAnnouncementStatus] = useState("");
   const [announcementLoading, setAnnouncementLoading] = useState(false);
+  const [metricsOverview, setMetricsOverview] = useState<MetricsOverview | null>(null);
+  const [requestSeries, setRequestSeries] = useState<MetricsTimeseries | null>(null);
+  const [incidents, setIncidents] = useState<Incident[]>([]);
+  const [monitoringLoading, setMonitoringLoading] = useState(false);
+  const [monitoringError, setMonitoringError] = useState("");
 
   useEffect(() => {
     if (!isLoading && (!user || user.role !== "admin")) {
@@ -75,10 +87,35 @@ export default function AdminPage() {
     }
   }, [user]);
 
+  const loadMonitoring = useCallback(async () => {
+    if (!user) return;
+    setMonitoringLoading(true);
+    setMonitoringError("");
+    try {
+      const [overview, series, incidentList] = await Promise.all([
+        getAdminMetricsOverview(user.token),
+        getAdminMetricsTimeseries(user.token, {
+          metric: "request_count",
+          window_minutes: 24 * 60,
+          step_minutes: 60,
+        }),
+        getAdminIncidents(user.token),
+      ]);
+      setMetricsOverview(overview);
+      setRequestSeries(series);
+      setIncidents(incidentList);
+    } catch {
+      setMonitoringError("Failed to load monitoring data");
+    } finally {
+      setMonitoringLoading(false);
+    }
+  }, [user]);
+
   useEffect(() => {
     if (tab === "courses") loadCourses();
     else if (tab === "resources") loadResources();
-  }, [tab, loadCourses, loadResources]);
+    else if (tab === "monitoring") loadMonitoring();
+  }, [tab, loadCourses, loadResources, loadMonitoring]);
 
   const deleteCourse = async (code: string) => {
     if (!user || !confirm(`Delete course ${code}?`)) return;
@@ -124,12 +161,19 @@ export default function AdminPage() {
 
   if (isLoading || !user || user.role !== "admin") return null;
 
+  const requestPoints = (requestSeries?.points ?? []).map((point) => ({
+    ...point,
+    value: Number(point.value ?? 0),
+  }));
+  const visibleRequestPoints = requestPoints.filter((point) => point.value > 0);
+  const maxRequestValue = Math.max(1, ...requestPoints.map((point) => point.value));
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
       <h1 className="text-2xl font-bold mb-6">Admin Panel</h1>
 
       <div className="flex gap-2 mb-6 border-b">
-        {(["courses", "resources", "announcements"] as const).map((t) => (
+        {(["courses", "resources", "announcements", "monitoring"] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -258,6 +302,130 @@ export default function AdminPage() {
               {announcementLoading ? "Sending…" : "Send to all users"}
             </Button>
           </form>
+        </div>
+      )}
+
+      {tab === "monitoring" && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Monitoring</h2>
+            <Button variant="outline" size="sm" onClick={loadMonitoring} disabled={monitoringLoading}>
+              Refresh
+            </Button>
+          </div>
+
+          {monitoringError && <p className="text-sm text-destructive">{monitoringError}</p>}
+
+          {monitoringLoading ? (
+            <p className="text-sm text-muted-foreground">Loading…</p>
+          ) : metricsOverview ? (
+            <>
+              <div className="grid gap-4 md:grid-cols-4">
+                <div className="rounded-md border p-4">
+                  <p className="text-xs uppercase text-muted-foreground">Requests (24h)</p>
+                  <p className="mt-2 text-2xl font-semibold">{metricsOverview.request_count}</p>
+                </div>
+                <div className="rounded-md border p-4">
+                  <p className="text-xs uppercase text-muted-foreground">Errors (24h)</p>
+                  <p className="mt-2 text-2xl font-semibold">{metricsOverview.error_count}</p>
+                </div>
+                <div className="rounded-md border p-4">
+                  <p className="text-xs uppercase text-muted-foreground">Error Rate</p>
+                  <p className="mt-2 text-2xl font-semibold">{metricsOverview.error_rate_pct.toFixed(1)}%</p>
+                </div>
+                <div className="rounded-md border p-4">
+                  <p className="text-xs uppercase text-muted-foreground">P95 Latency</p>
+                  <p className="mt-2 text-2xl font-semibold">{metricsOverview.p95_latency_ms.toFixed(0)} ms</p>
+                </div>
+              </div>
+
+              <div className="rounded-md border p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold">Request Volume</h3>
+                  <p className="text-xs text-muted-foreground">Last 24 hours, hourly buckets</p>
+                </div>
+                {visibleRequestPoints.length === 0 ? (
+                  <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
+                    No recorded request buckets yet.
+                  </div>
+                ) : (
+                  <div className="flex h-40 items-end gap-2">
+                    {requestPoints.map((point) => (
+                      <div key={String(point.ts_ms)} className="flex h-full flex-1 items-end">
+                        {point.value > 0 ? (
+                          <div
+                            className="w-full rounded-sm bg-primary/70"
+                            style={{ height: `${Math.max(12, (point.value / maxRequestValue) * 100)}%` }}
+                            title={`${new Date(Number(point.ts_ms)).toLocaleString()}: ${point.value}`}
+                          />
+                        ) : (
+                          <div
+                            className="w-full rounded-sm bg-muted"
+                            style={{ height: "6px" }}
+                            title={`${new Date(Number(point.ts_ms)).toLocaleString()}: 0`}
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="rounded-md border overflow-hidden">
+                <div className="border-b px-4 py-3">
+                  <h3 className="text-sm font-semibold">Service Breakdown</h3>
+                </div>
+                <table className="w-full text-sm">
+                  <thead className="bg-muted text-muted-foreground">
+                    <tr>
+                      <th className="px-4 py-2 text-left font-medium">Service</th>
+                      <th className="px-4 py-2 text-left font-medium">Requests</th>
+                      <th className="px-4 py-2 text-left font-medium">Errors</th>
+                      <th className="px-4 py-2 text-left font-medium">Error Rate</th>
+                      <th className="px-4 py-2 text-left font-medium">P95 Latency</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {metricsOverview.services.map((service) => (
+                      <tr key={service.service_name} className="border-t">
+                        <td className="px-4 py-2 font-medium">{service.service_name}</td>
+                        <td className="px-4 py-2">{service.request_count}</td>
+                        <td className="px-4 py-2">{service.error_count}</td>
+                        <td className="px-4 py-2">{service.error_rate_pct.toFixed(1)}%</td>
+                        <td className="px-4 py-2">{service.p95_latency_ms.toFixed(0)} ms</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="rounded-md border overflow-hidden">
+                <div className="border-b px-4 py-3">
+                  <h3 className="text-sm font-semibold">Open Incidents</h3>
+                </div>
+                {incidents.length === 0 ? (
+                  <p className="px-4 py-4 text-sm text-muted-foreground">No active incidents in the current window.</p>
+                ) : (
+                  <div className="divide-y">
+                    {incidents.map((incident) => (
+                      <div key={incident.id} className="px-4 py-3">
+                        <div className="flex items-center justify-between gap-4">
+                          <div>
+                            <p className="font-medium">{incident.title}</p>
+                            <p className="text-sm text-muted-foreground">{incident.message}</p>
+                          </div>
+                          <div className="text-right text-xs text-muted-foreground">
+                            <p>{incident.source}</p>
+                            <p>{incident.severity}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          ) : null}
         </div>
       )}
     </div>

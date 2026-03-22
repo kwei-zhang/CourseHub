@@ -5,6 +5,7 @@ import { auth } from "./lib/auth";
 import proxyRouter from "./routes/proxy";
 import healthRouter from "./routes/health";
 import cors from "cors";
+import { metricsMiddleware } from "./lib/metrics";
 
 function logError(message: string, err: unknown): void {
   const timestamp = new Date().toISOString();
@@ -32,6 +33,7 @@ app.use(cors({
 app.all("/api/auth/*", toNodeHandler(auth));
 
 app.use(express.json());
+app.use(metricsMiddleware);
 
 app.get("/", (_req, res) => {
   res.json({ ok: true });

@@ -29,7 +29,13 @@ export {
   resourceRecordAccessLog,
 } from "./resource";
 export { fileGet, fileGetUploadUrl, fileGetDownloadUrl } from "./file";
-export { systemGet } from "./system";
+export {
+  systemGet,
+  systemGetMetricsOverview,
+  systemGetMetricsTimeseries,
+  systemListIncidents,
+  systemRecordMetricEvent,
+} from "./system";
 export type {
   GetResponse,
   GetUploadUrlRequest,
@@ -65,4 +71,15 @@ export type {
   UserInfo,
   ListAllUsersResponse,
   ListAllResourcesResponse,
+  GetMetricsOverviewRequest,
+  GetMetricsOverviewResponse,
+  GetMetricsTimeseriesRequest,
+  GetMetricsTimeseriesResponse,
+  Incident,
+  ListIncidentsRequest,
+  ListIncidentsResponse,
+  MetricsPoint,
+  RecordMetricEventRequest,
+  RecordMetricEventResponse,
+  ServiceMetricSummary,
 } from "../../types/grpc";
