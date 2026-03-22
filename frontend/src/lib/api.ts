@@ -1,4 +1,4 @@
-import { Resource, CourseEnrollment } from "./types";
+import { Incident, MetricsOverview, MetricsTimeseries, Resource, CourseEnrollment } from "./types";
 
 const AUTH_URL = process.env.NEXT_PUBLIC_AUTH_URL ?? "http://localhost:4000";
 
@@ -157,4 +157,49 @@ export async function updateResource(
     throw new Error(err.error ?? "Failed to update resource");
   }
   return readAuthJson<Resource>(res);
+}
+
+export async function getAdminMetricsOverview(
+  token: string,
+  windowMinutes = 24 * 60
+): Promise<MetricsOverview> {
+  const res = await authFetch(`/admin/metrics/overview?window_minutes=${windowMinutes}`, token);
+  if (!res.ok) {
+    throw new Error("Failed to load metrics overview");
+  }
+  return readAuthJson<MetricsOverview>(res);
+}
+
+export async function getAdminMetricsTimeseries(
+  token: string,
+  params: {
+    metric: string;
+    service_name?: string;
+    window_minutes?: number;
+    step_minutes?: number;
+  }
+): Promise<MetricsTimeseries> {
+  const search = new URLSearchParams({
+    metric: params.metric,
+    service_name: params.service_name ?? "",
+    window_minutes: String(params.window_minutes ?? 24 * 60),
+    step_minutes: String(params.step_minutes ?? 60),
+  });
+  const res = await authFetch(`/admin/metrics/timeseries?${search.toString()}`, token);
+  if (!res.ok) {
+    throw new Error("Failed to load metrics timeseries");
+  }
+  return readAuthJson<MetricsTimeseries>(res);
+}
+
+export async function getAdminIncidents(
+  token: string,
+  windowMinutes = 24 * 60
+): Promise<Incident[]> {
+  const res = await authFetch(`/admin/metrics/incidents?window_minutes=${windowMinutes}`, token);
+  if (!res.ok) {
+    throw new Error("Failed to load incidents");
+  }
+  const data = await readAuthJson<{ incidents?: Incident[] }>(res);
+  return data.incidents ?? [];
 }

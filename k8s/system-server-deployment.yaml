@@ -34,3 +34,8 @@ spec:
           env:
             - name: HEALTH_PORT
               value: "8080"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: lrms-secrets
+                  key: DATABASE_URL

@@ -6,6 +6,9 @@ import {
   userDeleteCourse,
   resourceListAllResources,
   resourceDeleteResource,
+  systemGetMetricsOverview,
+  systemGetMetricsTimeseries,
+  systemListIncidents,
 } from "../../lib/grpc";
 import { metadataForUser } from "../../lib/grpcProxy";
 
@@ -112,6 +115,51 @@ router.post("/announcements", async (req: Request, res: Response): Promise<void>
   } catch (err) {
     console.error("Admin announcements error:", err);
     res.status(502).json({ error: "Failed to send announcement" });
+  }
+});
+
+router.get("/metrics/overview", async (req: Request, res: Response): Promise<void> => {
+  const windowMinutes = Number(req.query.window_minutes) || 24 * 60;
+  try {
+    const metadata = req.user ? metadataForUser(req.user.id) : undefined;
+    const data = await systemGetMetricsOverview({ window_minutes: windowMinutes }, metadata);
+    res.json(data);
+  } catch (err) {
+    grpcErr(err, res);
+  }
+});
+
+router.get("/metrics/timeseries", async (req: Request, res: Response): Promise<void> => {
+  const metric = typeof req.query.metric === "string" ? req.query.metric : "request_count";
+  const serviceName = typeof req.query.service_name === "string" ? req.query.service_name : "";
+  const windowMinutes = Number(req.query.window_minutes) || 24 * 60;
+  const stepMinutes = Number(req.query.step_minutes) || 60;
+
+  try {
+    const metadata = req.user ? metadataForUser(req.user.id) : undefined;
+    const data = await systemGetMetricsTimeseries(
+      {
+        metric,
+        service_name: serviceName,
+        window_minutes: windowMinutes,
+        step_minutes: stepMinutes,
+      },
+      metadata
+    );
+    res.json(data);
+  } catch (err) {
+    grpcErr(err, res);
+  }
+});
+
+router.get("/metrics/incidents", async (req: Request, res: Response): Promise<void> => {
+  const windowMinutes = Number(req.query.window_minutes) || 24 * 60;
+  try {
+    const metadata = req.user ? metadataForUser(req.user.id) : undefined;
+    const data = await systemListIncidents({ window_minutes: windowMinutes }, metadata);
+    res.json(data);
+  } catch (err) {
+    grpcErr(err, res);
   }
 });
 
