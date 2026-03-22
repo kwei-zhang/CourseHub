@@ -287,6 +287,8 @@ service SystemService {
   rpc GetMetricsOverview(GetMetricsOverviewRequest) returns (GetMetricsOverviewResponse);
   rpc GetMetricsTimeseries(GetMetricsTimeseriesRequest) returns (GetMetricsTimeseriesResponse);
   rpc ListIncidents(ListIncidentsRequest) returns (ListIncidentsResponse);
+  rpc RecordBackupRun(RecordBackupRunRequest) returns (RecordBackupRunResponse);
+  rpc GetBackupStatus(GetBackupStatusRequest) returns (GetBackupStatusResponse);
 }
 
 message RecordMetricEventRequest {
@@ -308,18 +310,26 @@ message GetMetricsOverviewRequest {
 message ServiceMetricSummary {
   string service_name = 1;
   int64 request_count = 2;
-  int64 error_count = 3;
-  double error_rate_pct = 4;
-  double p95_latency_ms = 5;
+  int64 client_error_count = 3;
+  int64 server_error_count = 4;
+  int64 error_count = 5;
+  double client_error_rate_pct = 6;
+  double server_error_rate_pct = 7;
+  double error_rate_pct = 8;
+  double p95_latency_ms = 9;
 }
 
 message GetMetricsOverviewResponse {
   int32 window_minutes = 1;
   int64 request_count = 2;
-  int64 error_count = 3;
-  double error_rate_pct = 4;
-  double p95_latency_ms = 5;
-  repeated ServiceMetricSummary services = 6;
+  int64 client_error_count = 3;
+  int64 server_error_count = 4;
+  int64 error_count = 5;
+  double client_error_rate_pct = 6;
+  double server_error_rate_pct = 7;
+  double error_rate_pct = 8;
+  double p95_latency_ms = 9;
+  repeated ServiceMetricSummary services = 10;
 }
 
 message GetMetricsTimeseriesRequest {
@@ -358,4 +368,30 @@ message Incident {
 
 message ListIncidentsResponse {
   repeated Incident incidents = 1;
+}
+
+message RecordBackupRunRequest {
+  string status = 1;
+  int64 started_at_ms = 2;
+  int64 finished_at_ms = 3;
+  string object_key = 4;
+  int64 size_bytes = 5;
+  string error_message = 6;
+}
+
+message RecordBackupRunResponse {
+  bool ok = 1;
+}
+
+message GetBackupStatusRequest {}
+
+message GetBackupStatusResponse {
+  bool has_backup = 1;
+  string latest_status = 2;
+  int64 last_started_at_ms = 3;
+  int64 last_finished_at_ms = 4;
+  int64 age_minutes = 5;
+  int64 latest_size_bytes = 6;
+  string latest_object_key = 7;
+  string latest_error_message = 8;
 }

@@ -8,6 +8,11 @@ spec:
     app: system-server
   ports:
     - protocol: TCP
+      name: grpc
       port: 5003
       targetPort: 5003
+    - protocol: TCP
+      name: http-internal
+      port: 8080
+      targetPort: 8080
   type: ClusterIP

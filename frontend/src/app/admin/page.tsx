@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { useRouter } from "next/navigation";
 import {
   authFetch,
+  getAdminBackupStatus,
   getAdminIncidents,
   getAdminMetricsOverview,
   getAdminMetricsTimeseries,
@@ -13,7 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import type { Incident, MetricsOverview, MetricsTimeseries } from "@/lib/types";
+import type { BackupStatus, Incident, MetricsOverview, MetricsTimeseries } from "@/lib/types";
 
 type Course = { id: string; code: string; name: string };
 type Resource = {
@@ -46,6 +47,7 @@ export default function AdminPage() {
   const [metricsOverview, setMetricsOverview] = useState<MetricsOverview | null>(null);
   const [requestSeries, setRequestSeries] = useState<MetricsTimeseries | null>(null);
   const [incidents, setIncidents] = useState<Incident[]>([]);
+  const [backupStatus, setBackupStatus] = useState<BackupStatus | null>(null);
   const [monitoringLoading, setMonitoringLoading] = useState(false);
   const [monitoringError, setMonitoringError] = useState("");
 
@@ -92,7 +94,7 @@ export default function AdminPage() {
     setMonitoringLoading(true);
     setMonitoringError("");
     try {
-      const [overview, series, incidentList] = await Promise.all([
+      const [overview, series, incidentList, backups] = await Promise.all([
         getAdminMetricsOverview(user.token),
         getAdminMetricsTimeseries(user.token, {
           metric: "request_count",
@@ -100,10 +102,12 @@ export default function AdminPage() {
           step_minutes: 60,
         }),
         getAdminIncidents(user.token),
+        getAdminBackupStatus(user.token),
       ]);
       setMetricsOverview(overview);
       setRequestSeries(series);
       setIncidents(incidentList);
+      setBackupStatus(backups);
     } catch {
       setMonitoringError("Failed to load monitoring data");
     } finally {
@@ -326,16 +330,42 @@ export default function AdminPage() {
                   <p className="mt-2 text-2xl font-semibold">{metricsOverview.request_count}</p>
                 </div>
                 <div className="rounded-md border p-4">
-                  <p className="text-xs uppercase text-muted-foreground">Errors (24h)</p>
-                  <p className="mt-2 text-2xl font-semibold">{metricsOverview.error_count}</p>
+                  <p className="text-xs uppercase text-muted-foreground">4xx Errors</p>
+                  <p className="mt-2 text-2xl font-semibold">{metricsOverview.client_error_count}</p>
                 </div>
                 <div className="rounded-md border p-4">
-                  <p className="text-xs uppercase text-muted-foreground">Error Rate</p>
-                  <p className="mt-2 text-2xl font-semibold">{metricsOverview.error_rate_pct.toFixed(1)}%</p>
+                  <p className="text-xs uppercase text-muted-foreground">5xx Errors</p>
+                  <p className="mt-2 text-2xl font-semibold">{metricsOverview.server_error_count}</p>
                 </div>
                 <div className="rounded-md border p-4">
                   <p className="text-xs uppercase text-muted-foreground">P95 Latency</p>
                   <p className="mt-2 text-2xl font-semibold">{metricsOverview.p95_latency_ms.toFixed(0)} ms</p>
+                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-4">
+                <div className="rounded-md border p-4">
+                  <p className="text-xs uppercase text-muted-foreground">Total Error Rate</p>
+                  <p className="mt-2 text-2xl font-semibold">{metricsOverview.error_rate_pct.toFixed(1)}%</p>
+                </div>
+                <div className="rounded-md border p-4">
+                  <p className="text-xs uppercase text-muted-foreground">4xx Rate</p>
+                  <p className="mt-2 text-2xl font-semibold">{metricsOverview.client_error_rate_pct.toFixed(1)}%</p>
+                </div>
+                <div className="rounded-md border p-4">
+                  <p className="text-xs uppercase text-muted-foreground">5xx Rate</p>
+                  <p className="mt-2 text-2xl font-semibold">{metricsOverview.server_error_rate_pct.toFixed(1)}%</p>
+                </div>
+                <div className="rounded-md border p-4">
+                  <p className="text-xs uppercase text-muted-foreground">Latest Backup</p>
+                  <p className="mt-2 text-xl font-semibold capitalize">
+                    {backupStatus?.has_backup ? backupStatus.latest_status : "No runs"}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {backupStatus?.has_backup
+                      ? `${backupStatus.age_minutes} min ago`
+                      : "Waiting for backup reports"}
+                  </p>
                 </div>
               </div>
 
@@ -380,7 +410,8 @@ export default function AdminPage() {
                     <tr>
                       <th className="px-4 py-2 text-left font-medium">Service</th>
                       <th className="px-4 py-2 text-left font-medium">Requests</th>
-                      <th className="px-4 py-2 text-left font-medium">Errors</th>
+                      <th className="px-4 py-2 text-left font-medium">4xx</th>
+                      <th className="px-4 py-2 text-left font-medium">5xx</th>
                       <th className="px-4 py-2 text-left font-medium">Error Rate</th>
                       <th className="px-4 py-2 text-left font-medium">P95 Latency</th>
                     </tr>
@@ -390,13 +421,56 @@ export default function AdminPage() {
                       <tr key={service.service_name} className="border-t">
                         <td className="px-4 py-2 font-medium">{service.service_name}</td>
                         <td className="px-4 py-2">{service.request_count}</td>
-                        <td className="px-4 py-2">{service.error_count}</td>
+                        <td className="px-4 py-2">{service.client_error_count}</td>
+                        <td className="px-4 py-2">{service.server_error_count}</td>
                         <td className="px-4 py-2">{service.error_rate_pct.toFixed(1)}%</td>
                         <td className="px-4 py-2">{service.p95_latency_ms.toFixed(0)} ms</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
+              </div>
+
+              <div className="rounded-md border overflow-hidden">
+                <div className="border-b px-4 py-3">
+                  <h3 className="text-sm font-semibold">Backup Status</h3>
+                </div>
+                {!backupStatus?.has_backup ? (
+                  <p className="px-4 py-4 text-sm text-muted-foreground">
+                    No backup runs have been recorded yet.
+                  </p>
+                ) : (
+                  <div className="grid gap-4 px-4 py-4 md:grid-cols-2">
+                    <div>
+                      <p className="text-xs uppercase text-muted-foreground">Status</p>
+                      <p className="mt-1 font-medium capitalize">{backupStatus.latest_status}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase text-muted-foreground">Last Started</p>
+                      <p className="mt-1 font-medium">
+                        {backupStatus.last_started_at_ms
+                          ? new Date(Number(backupStatus.last_started_at_ms)).toLocaleString()
+                          : "Unknown"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase text-muted-foreground">Age</p>
+                      <p className="mt-1 font-medium">{backupStatus.age_minutes} minutes</p>
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase text-muted-foreground">Object Key</p>
+                      <p className="mt-1 truncate font-medium">
+                        {backupStatus.latest_object_key || "Not recorded"}
+                      </p>
+                    </div>
+                    {backupStatus.latest_error_message && (
+                      <div className="md:col-span-2">
+                        <p className="text-xs uppercase text-muted-foreground">Error</p>
+                        <p className="mt-1 text-sm text-destructive">{backupStatus.latest_error_message}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="rounded-md border overflow-hidden">

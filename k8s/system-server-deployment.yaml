@@ -34,6 +34,11 @@ spec:
           env:
             - name: HEALTH_PORT
               value: "8080"
+            - name: BACKUP_REPORT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: lrms-secrets
+                  key: BACKUP_REPORT_TOKEN
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:

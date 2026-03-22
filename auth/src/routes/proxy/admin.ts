@@ -6,6 +6,7 @@ import {
   userDeleteCourse,
   resourceListAllResources,
   resourceDeleteResource,
+  systemGetBackupStatus,
   systemGetMetricsOverview,
   systemGetMetricsTimeseries,
   systemListIncidents,
@@ -157,6 +158,16 @@ router.get("/metrics/incidents", async (req: Request, res: Response): Promise<vo
   try {
     const metadata = req.user ? metadataForUser(req.user.id) : undefined;
     const data = await systemListIncidents({ window_minutes: windowMinutes }, metadata);
+    res.json(data);
+  } catch (err) {
+    grpcErr(err, res);
+  }
+});
+
+router.get("/metrics/backups", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const metadata = req.user ? metadataForUser(req.user.id) : undefined;
+    const data = await systemGetBackupStatus({}, metadata);
     res.json(data);
   } catch (err) {
     grpcErr(err, res);

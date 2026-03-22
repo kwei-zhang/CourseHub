@@ -31,12 +31,16 @@ export {
 export { fileGet, fileGetUploadUrl, fileGetDownloadUrl } from "./file";
 export {
   systemGet,
+  systemGetBackupStatus,
   systemGetMetricsOverview,
   systemGetMetricsTimeseries,
   systemListIncidents,
+  systemRecordBackupRun,
   systemRecordMetricEvent,
 } from "./system";
 export type {
+  GetBackupStatusRequest,
+  GetBackupStatusResponse,
   GetResponse,
   GetUploadUrlRequest,
   GetUploadUrlResponse,
@@ -79,6 +83,8 @@ export type {
   ListIncidentsRequest,
   ListIncidentsResponse,
   MetricsPoint,
+  RecordBackupRunRequest,
+  RecordBackupRunResponse,
   RecordMetricEventRequest,
   RecordMetricEventResponse,
   ServiceMetricSummary,

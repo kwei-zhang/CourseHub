@@ -19,7 +19,11 @@ export type CourseEnrollment = {
 export type ServiceMetricSummary = {
   service_name: string;
   request_count: number | string;
+  client_error_count: number | string;
+  server_error_count: number | string;
   error_count: number | string;
+  client_error_rate_pct: number;
+  server_error_rate_pct: number;
   error_rate_pct: number;
   p95_latency_ms: number;
 };
@@ -27,7 +31,11 @@ export type ServiceMetricSummary = {
 export type MetricsOverview = {
   window_minutes: number;
   request_count: number | string;
+  client_error_count: number | string;
+  server_error_count: number | string;
   error_count: number | string;
+  client_error_rate_pct: number;
+  server_error_rate_pct: number;
   error_rate_pct: number;
   p95_latency_ms: number;
   services: ServiceMetricSummary[];
@@ -54,4 +62,15 @@ export type Incident = {
   title: string;
   message: string;
   started_at_ms: number | string;
+};
+
+export type BackupStatus = {
+  has_backup: boolean;
+  latest_status: string;
+  last_started_at_ms: number | string;
+  last_finished_at_ms: number | string;
+  age_minutes: number | string;
+  latest_size_bytes: number | string;
+  latest_object_key: string;
+  latest_error_message: string;
 };

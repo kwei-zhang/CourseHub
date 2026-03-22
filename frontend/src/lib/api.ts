@@ -1,4 +1,4 @@
-import { Incident, MetricsOverview, MetricsTimeseries, Resource, CourseEnrollment } from "./types";
+import { BackupStatus, Incident, MetricsOverview, MetricsTimeseries, Resource, CourseEnrollment } from "./types";
 
 const AUTH_URL = process.env.NEXT_PUBLIC_AUTH_URL ?? "http://localhost:4000";
 
@@ -202,4 +202,12 @@ export async function getAdminIncidents(
   }
   const data = await readAuthJson<{ incidents?: Incident[] }>(res);
   return data.incidents ?? [];
+}
+
+export async function getAdminBackupStatus(token: string): Promise<BackupStatus> {
+  const res = await authFetch("/admin/metrics/backups", token);
+  if (!res.ok) {
+    throw new Error("Failed to load backup status");
+  }
+  return readAuthJson<BackupStatus>(res);
 }

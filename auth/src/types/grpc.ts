@@ -154,7 +154,11 @@ export type RecordMetricEventResponse = { ok: boolean };
 export type ServiceMetricSummary = {
   service_name: string;
   request_count: number | string;
+  client_error_count: number | string;
+  server_error_count: number | string;
   error_count: number | string;
+  client_error_rate_pct: number;
+  server_error_rate_pct: number;
   error_rate_pct: number;
   p95_latency_ms: number;
 };
@@ -162,7 +166,11 @@ export type GetMetricsOverviewRequest = { window_minutes?: number };
 export type GetMetricsOverviewResponse = {
   window_minutes: number;
   request_count: number | string;
+  client_error_count: number | string;
+  server_error_count: number | string;
   error_count: number | string;
+  client_error_rate_pct: number;
+  server_error_rate_pct: number;
   error_rate_pct: number;
   p95_latency_ms: number;
   services: ServiceMetricSummary[];
@@ -192,6 +200,26 @@ export type Incident = {
   started_at_ms: number | string;
 };
 export type ListIncidentsResponse = { incidents: Incident[] };
+export type RecordBackupRunRequest = {
+  status: string;
+  started_at_ms?: number | string;
+  finished_at_ms?: number | string;
+  object_key?: string;
+  size_bytes?: number | string;
+  error_message?: string;
+};
+export type RecordBackupRunResponse = { ok: boolean };
+export type GetBackupStatusRequest = Record<string, never>;
+export type GetBackupStatusResponse = {
+  has_backup: boolean;
+  latest_status: string;
+  last_started_at_ms: number | string;
+  last_finished_at_ms: number | string;
+  age_minutes: number | string;
+  latest_size_bytes: number | string;
+  latest_object_key: string;
+  latest_error_message: string;
+};
 
 /** Loaded proto package with service constructors. */
 export interface Ece1779Package {

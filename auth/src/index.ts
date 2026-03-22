@@ -30,10 +30,11 @@ app.use(cors({
   credentials: true,
 }));
 
+app.use(metricsMiddleware);
+
 app.all("/api/auth/*", toNodeHandler(auth));
 
 app.use(express.json());
-app.use(metricsMiddleware);
 
 app.get("/", (_req, res) => {
   res.json({ ok: true });
