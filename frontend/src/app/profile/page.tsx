@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/AuthContext";
-import { authFetch } from "@/lib/api";
+import { authFetch, readAuthJson } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
@@ -68,7 +68,7 @@ function ChangePasswordForm({ token }: { token: string }) {
         method: "POST",
         body: JSON.stringify({ currentPassword, newPassword }),
       });
-      const data = await res.json();
+      const data = await readAuthJson<{ error?: string }>(res);
       if (!res.ok) {
         toast.error(data.error ?? "Password change failed.");
         return;
@@ -137,7 +137,7 @@ export default function ProfilePage() {
     authFetch(`/user/by-email?email=${encodeURIComponent(user.email)}`, user.token)
       .then(async (res) => {
         if (!res.ok) throw new Error(`Server returned ${res.status}`);
-        const data = await res.json();
+        const data = await readAuthJson<{ user?: UserProfile | null }>(res);
         setProfile(data.user ?? null);
       })
       .catch((err) => {

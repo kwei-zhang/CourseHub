@@ -48,6 +48,11 @@ export default function Navbar() {
                 <Button variant="outline" size="sm">Manage</Button>
               </Link>
             )}
+            {user.role === "admin" && (
+              <Link href="/admin">
+                <Button variant="outline" size="sm">Admin</Button>
+              </Link>
+            )}
             <Button variant="outline" size="sm" onClick={handleLogout}>
               Sign out
             </Button>

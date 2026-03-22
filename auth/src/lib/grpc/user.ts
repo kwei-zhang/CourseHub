@@ -16,6 +16,7 @@ import type {
   CreateCourseRequest,
   DeleteCourseRequest,
   DeleteCourseResponse,
+  ListAllUsersResponse,
 } from "../../types/grpc";
 import { userClient } from "./client";
 
@@ -193,6 +194,19 @@ export function userDeleteCourse(
       (err: Error | null, res?: DeleteCourseResponse) => {
         if (err) reject(err);
         else resolve(res ?? { ok: false });
+      }
+    );
+  });
+}
+
+export function userListAllUsers(metadata?: grpc.Metadata): Promise<ListAllUsersResponse> {
+  return new Promise((resolve, reject) => {
+    userClient.listAllUsers(
+      {},
+      metadata ?? new grpc.Metadata(),
+      (err: Error | null, res?: ListAllUsersResponse) => {
+        if (err) reject(err);
+        else resolve(res ?? { users: [] });
       }
     );
   });

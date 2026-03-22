@@ -4,6 +4,7 @@ import userProxy from "./user";
 import resourceProxy from "./resource";
 import fileProxy from "./file";
 import systemProxy from "./system";
+import adminProxy from "./admin";
 
 const router = Router();
 
@@ -14,5 +15,6 @@ router.use("/user", userProxy);
 router.use("/resource", resourceProxy);
 router.use("/file", fileProxy);
 router.use("/system", requireRole("admin"), systemProxy);
+router.use("/admin", requireRole("admin"), adminProxy);
 
 export default router;

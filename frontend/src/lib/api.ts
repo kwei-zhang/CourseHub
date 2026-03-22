@@ -2,12 +2,30 @@ import { Resource, CourseEnrollment } from "./types";
 
 const AUTH_URL = process.env.NEXT_PUBLIC_AUTH_URL ?? "http://localhost:4000";
 
+/**
+ * Parse JSON from an auth API response. If the body is HTML (e.g. wrong
+ * NEXT_PUBLIC_AUTH_URL pointing at the Next.js app), throws a clear error
+ * instead of `Unexpected token '<'`.
+ */
+export async function readAuthJson<T>(res: Response): Promise<T> {
+  const text = await res.text();
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    throw new Error(
+      "Auth API returned non-JSON (often HTML). Set NEXT_PUBLIC_AUTH_URL to your auth service URL (e.g. http://localhost:4000), not the Next.js dev server."
+    );
+  }
+}
+
 export async function authFetch(
   path: string,
   token: string,
   init?: RequestInit
 ): Promise<Response> {
-  return fetch(`${AUTH_URL}${path}`, {
+  const p = path.startsWith("/") ? path : `/${path}`;
+  /** Auth REST gateway mounts proxies at `/api` (see auth/src/index.ts). */
+  return fetch(`${AUTH_URL}/api${p}`, {
     ...init,
     headers: {
       "Content-Type": "application/json",
@@ -39,10 +57,12 @@ export async function getUploadUrl(
     body: JSON.stringify(params),
   });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error((err as { error?: string }).error ?? "Failed to get upload URL");
+    const err = await readAuthJson<{ error?: string }>(res).catch(() => ({
+      error: res.statusText,
+    }));
+    throw new Error(err.error ?? "Failed to get upload URL");
   }
-  return res.json() as Promise<GetUploadUrlResponse>;
+  return readAuthJson<GetUploadUrlResponse>(res);
 }
 
 /** Request body for POST /resource/ (auth proxy → file-server CreateResource). */
@@ -64,17 +84,19 @@ export async function createResourceOnServer(
     body: JSON.stringify(params),
   });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error((err as { error?: string }).error ?? "Failed to create resource");
+    const err = await readAuthJson<{ error?: string }>(res).catch(() => ({
+      error: res.statusText,
+    }));
+    throw new Error(err.error ?? "Failed to create resource");
   }
-  return res.json() as Promise<Resource>;
+  return readAuthJson<Resource>(res);
 }
 
 /** Fetch the current user's course enrollments. */
 export async function getEnrollments(token: string): Promise<CourseEnrollment[]> {
   const res = await authFetch("/user/enrollments", token);
   if (!res.ok) return [];
-  const data = await res.json() as { enrollments?: CourseEnrollment[] };
+  const data = await readAuthJson<{ enrollments?: CourseEnrollment[] }>(res);
   return data.enrollments ?? [];
 }
 
@@ -85,7 +107,7 @@ export async function listResourcesByCourse(
 ): Promise<Resource[]> {
   const res = await authFetch(`/resource/list?courseCode=${encodeURIComponent(courseCode)}`, token);
   if (!res.ok) return [];
-  const data = await res.json() as { resources?: Resource[] };
+  const data = await readAuthJson<{ resources?: Resource[] }>(res);
   return data.resources ?? [];
 }
 
@@ -103,7 +125,7 @@ export async function getResourcesForUser(token: string): Promise<Resource[]> {
 export async function getResource(token: string, id: string): Promise<Resource | null> {
   const res = await authFetch(`/resource/${id}`, token);
   if (!res.ok) return null;
-  return res.json() as Promise<Resource>;
+  return readAuthJson<Resource>(res);
 }
 
 /** Delete a resource by ID. */
@@ -129,8 +151,10 @@ export async function updateResource(
     body: JSON.stringify(params),
   });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error((err as { error?: string }).error ?? "Failed to update resource");
+    const err = await readAuthJson<{ error?: string }>(res).catch(() => ({
+      error: res.statusText,
+    }));
+    throw new Error(err.error ?? "Failed to update resource");
   }
-  return res.json() as Promise<Resource>;
+  return readAuthJson<Resource>(res);
 }

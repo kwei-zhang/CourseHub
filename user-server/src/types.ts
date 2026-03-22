@@ -52,6 +52,10 @@ export type CreateCourseRequest = { code: string; name: string; instructor_id: s
 export type DeleteCourseRequest = { code: string };
 export type DeleteCourseResponse = { ok: boolean };
 
+export type UserInfo = { id: string; name: string; email: string; role: string };
+export type ListAllUsersRequest = Record<string, never>;
+export type ListAllUsersResponse = { users: UserInfo[] };
+
 /** Resource shape returned by ResourceService RPCs. */
 export type ResourceGrpcResponse = {
   id: string;

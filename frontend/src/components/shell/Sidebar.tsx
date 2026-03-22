@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/AuthContext";
 import { useEffect, useState } from "react";
-import { authFetch } from "@/lib/api";
+import { authFetch, readAuthJson } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
@@ -56,8 +56,11 @@ export default function Sidebar() {
   useEffect(() => {
     if (!user) return;
     authFetch("/user/enrollments", user.token)
-      .then((r) => r.json())
-      .then((d) => setEnrollments(d.enrollments ?? []))
+      .then(async (r) => {
+        if (!r.ok) return;
+        const d = await readAuthJson<{ enrollments?: CourseEnrollment[] }>(r);
+        setEnrollments(d.enrollments ?? []);
+      })
       .catch(console.error);
   }, [user]);
 
@@ -65,10 +68,16 @@ export default function Sidebar() {
     if (!user) return;
     try {
       const r = await authFetch("/user/courses", user.token);
-      const d = await r.json();
-      setAllCourses(d.courses ?? []);
+      if (!r.ok) {
+        toast.error("Could not load courses.");
+        setAllCourses([]);
+      } else {
+        const d = await readAuthJson<{ courses?: CourseInfo[] }>(r);
+        setAllCourses(d.courses ?? []);
+      }
     } catch {
       toast.error("Could not load courses.");
+      setAllCourses([]);
     }
     setSearch("");
     setEnrollOpen(true);
@@ -83,12 +92,16 @@ export default function Sidebar() {
         body: JSON.stringify({ course_code: courseCode }),
       });
       if (!res.ok) {
-        const d = await res.json();
+        const d = await readAuthJson<{ error?: string }>(res);
         toast.error(d.error ?? "Enroll failed.");
         return;
       }
       const refreshed = await authFetch("/user/enrollments", user.token);
-      const d = await refreshed.json();
+      if (!refreshed.ok) {
+        toast.error("Could not refresh enrollments.");
+        return;
+      }
+      const d = await readAuthJson<{ enrollments?: CourseEnrollment[] }>(refreshed);
       setEnrollments(d.enrollments ?? []);
       toast.success(`Enrolled in ${courseCode}`);
     } catch {
@@ -105,7 +118,7 @@ export default function Sidebar() {
         method: "DELETE",
       });
       if (!res.ok) {
-        const d = await res.json();
+        const d = await readAuthJson<{ error?: string }>(res);
         toast.error(d.error ?? "Unenroll failed.");
         return;
       }

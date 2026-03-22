@@ -67,3 +67,8 @@ spec:
               value: file-server:5002
             - name: SYSTEM_SERVER
               value: system-server:5003
+            - name: DO_FUNCTION_URL
+              valueFrom:
+                secretKeyRef:
+                  name: lrms-secrets
+                  key: DO_FUNCTION_URL

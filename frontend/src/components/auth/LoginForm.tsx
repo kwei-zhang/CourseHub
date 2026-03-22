@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Role } from "@/lib/auth";
+import { readAuthJson } from "@/lib/api";
 
 const AUTH_URL = process.env.NEXT_PUBLIC_AUTH_URL ?? "http://localhost:4000";
 
@@ -44,7 +45,11 @@ export function LoginForm() {
         body: JSON.stringify(body),
       });
 
-      const data = await res.json();
+      const data = await readAuthJson<{
+        message?: string;
+        token?: string;
+        user?: { email?: string; role?: Role };
+      }>(res);
 
       if (!res.ok) {
         setError(data.message || `Failed to ${isLogin ? "sign in" : "sign up"}.`);

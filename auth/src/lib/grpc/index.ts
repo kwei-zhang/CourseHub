@@ -17,11 +17,13 @@ export {
   userListCourses,
   userCreateCourse,
   userDeleteCourse,
+  userListAllUsers,
 } from "./user";
 export {
   resourceCreateResource,
   resourceGetResource,
   resourceListResources,
+  resourceListAllResources,
   resourceUpdateResource,
   resourceDeleteResource,
   resourceRecordAccessLog,
@@ -60,4 +62,7 @@ export type {
   CreateCourseRequest,
   DeleteCourseRequest,
   DeleteCourseResponse,
+  UserInfo,
+  ListAllUsersResponse,
+  ListAllResourcesResponse,
 } from "../../types/grpc";
