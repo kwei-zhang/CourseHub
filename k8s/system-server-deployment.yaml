@@ -18,3 +18,19 @@ spec:
           image: registry.digitalocean.com/ece1779lrms/system-server:latest
           ports:
             - containerPort: 5003
+            - containerPort: 8080
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          env:
+            - name: HEALTH_PORT
+              value: "8080"
