@@ -15,6 +15,6 @@ spec:
     spec:
       containers:
         - name: system-server
-          image: registry.digitalocean.com/ece1779-lrms/system-server:latest
+          image: registry.digitalocean.com/ece1779lrms/system-server:latest
           ports:
             - containerPort: 5003

@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: file-server
-          image: registry.digitalocean.com/ece1779-lrms/file-server:latest
+          image: registry.digitalocean.com/ece1779lrms/file-server:latest
           ports:
             - containerPort: 5002
           env:

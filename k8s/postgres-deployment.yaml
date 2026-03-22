@@ -22,7 +22,10 @@ spec:
             - name: POSTGRES_USER
               value: ece1779
             - name: POSTGRES_PASSWORD
-              value: ece1779
+              valueFrom:
+                secretKeyRef:
+                  name: lrms-secrets
+                  key: POSTGRES_PASSWORD
             - name: POSTGRES_DB
               value: ece1779
             - name: PGDATA

@@ -3,19 +3,21 @@ kind: Ingress
 metadata:
   name: lrms-ingress
   namespace: lrms
+  annotations:
+    # Automatically provision a Let's Encrypt TLS certificate
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    # Increase body size limit for file uploads
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
 spec:
   ingressClassName: nginx
+  tls:
+    - hosts:
+        - chalatus.com       # e.g. lrms.yourdomain.com
+      secretName: lrms-tls
   rules:
-    - host: lrms.localtest.me
+    - host: chalatus.com      # e.g. lrms.yourdomain.com
       http:
         paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: frontend
-                port:
-                  number: 3000
           - path: /api
             pathType: Prefix
             backend:
@@ -23,3 +25,10 @@ spec:
                 name: auth
                 port:
                   number: 4000
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 3000

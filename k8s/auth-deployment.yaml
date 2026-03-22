@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: auth
-          image: registry.digitalocean.com/ece1779-lrms/auth:latest
+          image: registry.digitalocean.com/ece1779lrms/auth:latest
           resources:
             requests:
               cpu: "100m"
@@ -38,7 +38,10 @@ spec:
             - name: PORT
               value: "4000"
             - name: FRONTEND_URL
-              value: "http://lrms.localtest.me"
+              valueFrom:
+                secretKeyRef:
+                  name: lrms-secrets
+                  key: FRONTEND_URL
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
@@ -54,21 +57,13 @@ spec:
                 secretKeyRef:
                   name: lrms-secrets
                   key: BETTER_AUTH_URL
-            - name: GOOGLE_CLIENT_ID
-              valueFrom:
-                secretKeyRef:
-                  name: lrms-secrets
-                  key: GOOGLE_CLIENT_ID
-            - name: GOOGLE_CLIENT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: lrms-secrets
-                  key: GOOGLE_CLIENT_SECRET
             - name: PROTO_PATH
               value: /app/proto/services.proto
             - name: USER_SERVER
               value: user-server:5001
             - name: FILE_SERVER
+              value: file-server:5002
+            - name: RESOURCE_SERVER
               value: file-server:5002
             - name: SYSTEM_SERVER
               value: system-server:5003
