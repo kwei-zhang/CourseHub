@@ -67,6 +67,13 @@ spec:
                       key: SPACES_SECRET
                 - name: SPACES_PREFIX
                   value: db-backups
+                - name: BACKUP_REPORT_URL
+                  value: http://system-server:8080/internal/backup-report
+                - name: BACKUP_REPORT_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: lrms-secrets
+                      key: BACKUP_REPORT_TOKEN
               volumeMounts:
                 - name: backup-data
                   mountPath: /backup
@@ -74,7 +81,31 @@ spec:
                 - /bin/sh
                 - -ec
                 - |
+                  report_backup() {
+                    status="$1"
+                    object_key="${2:-}"
+                    size_bytes="${3:-0}"
+                    error_message="${4:-}"
+                    started_at_ms="$(date -u +%s)000"
+                    payload="$(printf '{"status":"%s","started_at_ms":%s,"finished_at_ms":%s,"object_key":"%s","size_bytes":%s,"error_message":"%s"}' \
+                      "$status" "$started_at_ms" "$started_at_ms" "$object_key" "$size_bytes" "$error_message")"
+                    if command -v wget >/dev/null 2>&1; then
+                      wget -qO- \
+                        --header="Content-Type: application/json" \
+                        --header="X-Backup-Report-Token: ${BACKUP_REPORT_TOKEN}" \
+                        --post-data="$payload" \
+                        "$BACKUP_REPORT_URL" >/dev/null 2>&1 || true
+                    fi
+                  }
+
                   mc alias set spaces "$SPACES_ENDPOINT" "$SPACES_KEY" "$SPACES_SECRET"
                   latest_dump="$(find /backup -maxdepth 1 -type f -name '*.sql.gz' | head -n 1)"
                   test -n "$latest_dump"
-                  mc cp "$latest_dump" "spaces/${SPACES_BUCKET}/${SPACES_PREFIX}/$(basename "$latest_dump")"
+                  object_key="${SPACES_PREFIX}/$(basename "$latest_dump")"
+                  if mc cp "$latest_dump" "spaces/${SPACES_BUCKET}/${object_key}"; then
+                    size_bytes="$(wc -c < "$latest_dump" | tr -d ' ')"
+                    report_backup "success" "$object_key" "$size_bytes" ""
+                  else
+                    report_backup "failed" "$object_key" "0" "upload_failed"
+                    exit 1
+                  fi

@@ -1,5 +1,7 @@
 import grpc from "@grpc/grpc-js";
 import type {
+  GetBackupStatusRequest,
+  GetBackupStatusResponse,
   GetMetricsOverviewRequest,
   GetMetricsOverviewResponse,
   GetMetricsTimeseriesRequest,
@@ -7,6 +9,8 @@ import type {
   GetResponse,
   ListIncidentsRequest,
   ListIncidentsResponse,
+  RecordBackupRunRequest,
+  RecordBackupRunResponse,
   RecordMetricEventRequest,
   RecordMetricEventResponse,
 } from "../../types/grpc";
@@ -52,7 +56,11 @@ export function systemGetMetricsOverview(
             res ?? {
               window_minutes: request.window_minutes ?? 1440,
               request_count: 0,
+              client_error_count: 0,
+              server_error_count: 0,
               error_count: 0,
+              client_error_rate_pct: 0,
+              server_error_rate_pct: 0,
               error_rate_pct: 0,
               p95_latency_ms: 0,
               services: [],
@@ -101,6 +109,51 @@ export function systemListIncidents(
       (err: Error | null, res?: ListIncidentsResponse) => {
         if (err) reject(err);
         else resolve(res ?? { incidents: [] });
+      }
+    );
+  });
+}
+
+export function systemRecordBackupRun(
+  request: RecordBackupRunRequest,
+  metadata?: grpc.Metadata
+): Promise<RecordBackupRunResponse> {
+  return new Promise((resolve, reject) => {
+    systemClient.recordBackupRun(
+      request,
+      metadata ?? new grpc.Metadata(),
+      (err: Error | null, res?: RecordBackupRunResponse) => {
+        if (err) reject(err);
+        else resolve(res ?? { ok: false });
+      }
+    );
+  });
+}
+
+export function systemGetBackupStatus(
+  request: GetBackupStatusRequest = {},
+  metadata?: grpc.Metadata
+): Promise<GetBackupStatusResponse> {
+  return new Promise((resolve, reject) => {
+    systemClient.getBackupStatus(
+      request,
+      metadata ?? new grpc.Metadata(),
+      (err: Error | null, res?: GetBackupStatusResponse) => {
+        if (err) reject(err);
+        else {
+          resolve(
+            res ?? {
+              has_backup: false,
+              latest_status: "",
+              last_started_at_ms: 0,
+              last_finished_at_ms: 0,
+              age_minutes: 0,
+              latest_size_bytes: 0,
+              latest_object_key: "",
+              latest_error_message: "",
+            }
+          );
+        }
       }
     );
   });

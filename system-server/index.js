@@ -4,15 +4,18 @@ const grpc = require('@grpc/grpc-js');
 const protoLoader = require('@grpc/proto-loader');
 const { initMetricsTable } = require('./db');
 const {
+  getBackupStatus,
   getMetricsOverview,
   getMetricsTimeseries,
   listIncidents,
+  recordBackupRun,
   recordMetricEvent,
 } = require('./metricsStore');
 
 const PROTO_PATH = path.join(__dirname, '../proto/services.proto');
 const PORT = process.env.PORT || 5003;
 const HEALTH_PORT = Number(process.env.HEALTH_PORT) || 8080;
+const BACKUP_REPORT_TOKEN = process.env.BACKUP_REPORT_TOKEN || "";
 let grpcReady = false;
 let storageReady = false;
 
@@ -41,6 +44,32 @@ const healthServer = http.createServer((req, res) => {
     const statusCode = isReady ? 200 : 503;
     res.writeHead(statusCode, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ ok: isReady, status: isReady ? 'ready' : 'starting' }));
+    return;
+  }
+
+  if (req.method === 'POST' && req.url === '/internal/backup-report') {
+    if (!BACKUP_REPORT_TOKEN || req.headers['x-backup-report-token'] !== BACKUP_REPORT_TOKEN) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: 'unauthorized' }));
+      return;
+    }
+
+    let body = '';
+    req.on('data', (chunk) => {
+      body += chunk;
+    });
+    req.on('end', async () => {
+      try {
+        const payload = body ? JSON.parse(body) : {};
+        await recordBackupRun(payload);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true }));
+      } catch (err) {
+        console.error('Backup report ingestion failed:', err);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: false, error: 'backup report failed' }));
+      }
+    });
     return;
   }
 
@@ -75,6 +104,20 @@ server.addService(proto.SystemService.service, {
   listIncidents: async (call, callback) => {
     try {
       callback(null, await listIncidents(call.request));
+    } catch (err) {
+      callback(err);
+    }
+  },
+  recordBackupRun: async (call, callback) => {
+    try {
+      callback(null, await recordBackupRun(call.request));
+    } catch (err) {
+      callback(err);
+    }
+  },
+  getBackupStatus: async (_call, callback) => {
+    try {
+      callback(null, await getBackupStatus());
     } catch (err) {
       callback(err);
     }
