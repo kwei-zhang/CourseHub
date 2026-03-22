@@ -40,7 +40,7 @@ app.get("/", (_req, res) => {
 app.use(healthRouter);
 
 /** Proxy to backend servers (user, file, system) after auth. Requires Bearer token or X-Auth-Token. */
-app.use(proxyRouter);
+app.use("/api", proxyRouter);
 
 /** Global error handler: log and respond for any unhandled route errors. */
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
