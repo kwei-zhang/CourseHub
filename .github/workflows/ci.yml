@@ -103,7 +103,7 @@ jobs:
           docker buildx build \
             --platform linux/amd64 \
             --provenance=false \
-            --build-arg NEXT_PUBLIC_AUTH_URL=https://chalatus.com/api \
+            --build-arg NEXT_PUBLIC_AUTH_URL=https://chalatus.com \
             -t registry.digitalocean.com/ece1779lrms/frontend:latest \
             -f frontend/Dockerfile \
             --push .
