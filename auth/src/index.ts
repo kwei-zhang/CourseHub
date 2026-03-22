@@ -3,6 +3,7 @@ import express from "express";
 import { toNodeHandler } from "better-auth/node";
 import { auth } from "./lib/auth";
 import proxyRouter from "./routes/proxy";
+import healthRouter from "./routes/health";
 import cors from "cors";
 
 function logError(message: string, err: unknown): void {
@@ -35,6 +36,8 @@ app.use(express.json());
 app.get("/", (_req, res) => {
   res.json({ ok: true });
 });
+
+app.use(healthRouter);
 
 /** Proxy to backend servers (user, file, system) after auth. Requires Bearer token or X-Auth-Token. */
 app.use(proxyRouter);

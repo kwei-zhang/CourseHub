@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: file-server
+  namespace: lrms
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: file-server
+  template:
+    metadata:
+      labels:
+        app: file-server
+    spec:
+      containers:
+        - name: file-server
+          image: registry.digitalocean.com/ece1779lrms/file-server:latest
+          ports:
+            - containerPort: 5002
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: lrms-secrets
+                  key: FILE_SERVER_DATABASE_URL
+            - name: SPACES_REGION
+              valueFrom:
+                secretKeyRef:
+                  name: lrms-secrets
+                  key: SPACES_REGION
+            - name: SPACES_ENDPOINT
+              valueFrom:
+                secretKeyRef:
+                  name: lrms-secrets
+                  key: SPACES_ENDPOINT
+            - name: SPACES_BUCKET
+              valueFrom:
+                secretKeyRef:
+                  name: lrms-secrets
+                  key: SPACES_BUCKET
+            - name: SPACES_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: lrms-secrets
+                  key: SPACES_KEY
+            - name: SPACES_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: lrms-secrets
+                  key: SPACES_SECRET

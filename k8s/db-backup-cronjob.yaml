@@ -1,0 +1,80 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: postgres-logical-backup
+  namespace: lrms
+spec:
+  schedule: "0 3 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      template:
+        spec:
+          restartPolicy: OnFailure
+          volumes:
+            - name: backup-data
+              emptyDir: {}
+          initContainers:
+            - name: dump-postgres
+              image: postgres:16-alpine
+              imagePullPolicy: IfNotPresent
+              env:
+                - name: DATABASE_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: lrms-secrets
+                      key: DATABASE_URL
+                - name: BACKUP_PREFIX
+                  value: postgres
+              volumeMounts:
+                - name: backup-data
+                  mountPath: /backup
+              command:
+                - /bin/sh
+                - -ec
+                - |
+                  timestamp="$(date -u +%Y-%m-%dT%H-%M-%SZ)"
+                  dump_file="/backup/${BACKUP_PREFIX}-${timestamp}.sql.gz"
+                  pg_dump "$DATABASE_URL" --clean --if-exists --no-owner --no-privileges | gzip -9 > "$dump_file"
+                  test -s "$dump_file"
+          containers:
+            - name: upload-to-spaces
+              image: minio/mc:RELEASE.2025-07-21T05-28-08Z
+              imagePullPolicy: IfNotPresent
+              env:
+                - name: SPACES_ENDPOINT
+                  valueFrom:
+                    secretKeyRef:
+                      name: lrms-secrets
+                      key: SPACES_ENDPOINT
+                - name: SPACES_BUCKET
+                  valueFrom:
+                    secretKeyRef:
+                      name: lrms-secrets
+                      key: SPACES_BUCKET
+                - name: SPACES_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: lrms-secrets
+                      key: SPACES_KEY
+                - name: SPACES_SECRET
+                  valueFrom:
+                    secretKeyRef:
+                      name: lrms-secrets
+                      key: SPACES_SECRET
+                - name: SPACES_PREFIX
+                  value: db-backups
+              volumeMounts:
+                - name: backup-data
+                  mountPath: /backup
+              command:
+                - /bin/sh
+                - -ec
+                - |
+                  mc alias set spaces "$SPACES_ENDPOINT" "$SPACES_KEY" "$SPACES_SECRET"
+                  latest_dump="$(find /backup -maxdepth 1 -type f -name '*.sql.gz' | head -n 1)"
+                  test -n "$latest_dump"
+                  mc cp "$latest_dump" "spaces/${SPACES_BUCKET}/${SPACES_PREFIX}/$(basename "$latest_dump")"

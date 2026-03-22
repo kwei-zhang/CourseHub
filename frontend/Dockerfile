@@ -7,7 +7,7 @@ COPY frontend /app/frontend
 WORKDIR /app/frontend
 
 # NEXT_PUBLIC_* vars are baked into the JS bundle at build time
-ARG NEXT_PUBLIC_AUTH_URL=http://localhost:3000
+ARG NEXT_PUBLIC_AUTH_URL=http://localhost:4000
 ENV NEXT_PUBLIC_AUTH_URL=${NEXT_PUBLIC_AUTH_URL}
 
 RUN npm ci

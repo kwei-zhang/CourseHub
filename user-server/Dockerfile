@@ -7,10 +7,14 @@ COPY user-server /app/user-server
 
 WORKDIR /app/user-server
 
+ARG DATABASE_URL=postgresql://ece1779:ece1779@localhost:5432/ece1779
+ENV DATABASE_URL=${DATABASE_URL}
+
 # Install all deps (includes tsx + prisma CLI as devDeps); postinstall runs prisma generate
 RUN npm ci
 
 ENV NODE_ENV=production
+
 
 EXPOSE 5001
 
