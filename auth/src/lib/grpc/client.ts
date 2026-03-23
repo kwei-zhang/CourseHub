@@ -42,3 +42,12 @@ export const systemClient = new (proto.SystemService as grpc.ServiceClientConstr
   systemTarget,
   grpc.credentials.createInsecure()
 );
+
+export function waitForGrpcClientReady(client: grpc.Client, timeoutMs = 10000): Promise<void> {
+  return new Promise((resolve, reject) => {
+    client.waitForReady(Date.now() + timeoutMs, (err?: Error | null) => {
+      if (err) reject(err);
+      else resolve();
+    });
+  });
+}
