@@ -1,4 +1,4 @@
-import { BackupStatus, Incident, MetricsOverview, MetricsTimeseries, Resource, CourseEnrollment } from "./types";
+import { BackupStatus, DbMetricsOverview, Incident, MetricsOverview, MetricsTimeseries, Resource, CourseEnrollment } from "./types";
 
 const AUTH_URL = process.env.NEXT_PUBLIC_AUTH_URL ?? "http://localhost:4000";
 
@@ -210,4 +210,15 @@ export async function getAdminBackupStatus(token: string): Promise<BackupStatus>
     throw new Error("Failed to load backup status");
   }
   return readAuthJson<BackupStatus>(res);
+}
+
+export async function getAdminDbMetricsOverview(
+  token: string,
+  windowMinutes = 24 * 60
+): Promise<DbMetricsOverview> {
+  const res = await authFetch(`/admin/metrics/database?window_minutes=${windowMinutes}`, token);
+  if (!res.ok) {
+    throw new Error("Failed to load database metrics");
+  }
+  return readAuthJson<DbMetricsOverview>(res);
 }

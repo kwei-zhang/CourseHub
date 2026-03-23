@@ -151,6 +151,14 @@ export type RecordMetricEventRequest = {
   occurred_at_ms: number | string;
 };
 export type RecordMetricEventResponse = { ok: boolean };
+export type RecordDbMetricEventRequest = {
+  service_name: string;
+  operation: string;
+  success: boolean;
+  latency_ms: number;
+  occurred_at_ms: number | string;
+};
+export type RecordDbMetricEventResponse = { ok: boolean };
 export type ServiceMetricSummary = {
   service_name: string;
   request_count: number | string;
@@ -163,6 +171,22 @@ export type ServiceMetricSummary = {
   p95_latency_ms: number;
 };
 export type GetMetricsOverviewRequest = { window_minutes?: number };
+export type DbMetricSummary = {
+  service_name: string;
+  query_count: number | string;
+  failed_query_count: number | string;
+  failed_query_rate_pct: number;
+  p95_query_latency_ms: number;
+};
+export type GetDbMetricsOverviewRequest = { window_minutes?: number };
+export type GetDbMetricsOverviewResponse = {
+  window_minutes: number;
+  query_count: number | string;
+  failed_query_count: number | string;
+  failed_query_rate_pct: number;
+  p95_query_latency_ms: number;
+  services: DbMetricSummary[];
+};
 export type GetMetricsOverviewResponse = {
   window_minutes: number;
   request_count: number | string;

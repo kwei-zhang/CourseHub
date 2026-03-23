@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   authFetch,
   getAdminBackupStatus,
+  getAdminDbMetricsOverview,
   getAdminIncidents,
   getAdminMetricsOverview,
   getAdminMetricsTimeseries,
@@ -14,7 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import type { BackupStatus, Incident, MetricsOverview, MetricsTimeseries } from "@/lib/types";
+import type { BackupStatus, DbMetricsOverview, Incident, MetricsOverview, MetricsTimeseries } from "@/lib/types";
 
 type Course = { id: string; code: string; name: string };
 type Resource = {
@@ -48,6 +49,7 @@ export default function AdminPage() {
   const [requestSeries, setRequestSeries] = useState<MetricsTimeseries | null>(null);
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [backupStatus, setBackupStatus] = useState<BackupStatus | null>(null);
+  const [dbMetrics, setDbMetrics] = useState<DbMetricsOverview | null>(null);
   const [monitoringLoading, setMonitoringLoading] = useState(false);
   const [monitoringError, setMonitoringError] = useState("");
 
@@ -94,7 +96,7 @@ export default function AdminPage() {
     setMonitoringLoading(true);
     setMonitoringError("");
     try {
-      const [overview, series, incidentList, backups] = await Promise.all([
+      const [overview, series, incidentList, backups, database] = await Promise.all([
         getAdminMetricsOverview(user.token),
         getAdminMetricsTimeseries(user.token, {
           metric: "request_count",
@@ -103,11 +105,13 @@ export default function AdminPage() {
         }),
         getAdminIncidents(user.token),
         getAdminBackupStatus(user.token),
+        getAdminDbMetricsOverview(user.token),
       ]);
       setMetricsOverview(overview);
       setRequestSeries(series);
       setIncidents(incidentList);
       setBackupStatus(backups);
+      setDbMetrics(database);
     } catch {
       setMonitoringError("Failed to load monitoring data");
     } finally {
@@ -345,6 +349,25 @@ export default function AdminPage() {
 
               <div className="grid gap-4 md:grid-cols-4">
                 <div className="rounded-md border p-4">
+                  <p className="text-xs uppercase text-muted-foreground">DB Queries</p>
+                  <p className="mt-2 text-2xl font-semibold">{dbMetrics?.query_count ?? 0}</p>
+                </div>
+                <div className="rounded-md border p-4">
+                  <p className="text-xs uppercase text-muted-foreground">DB Failed Queries</p>
+                  <p className="mt-2 text-2xl font-semibold">{dbMetrics?.failed_query_count ?? 0}</p>
+                </div>
+                <div className="rounded-md border p-4">
+                  <p className="text-xs uppercase text-muted-foreground">DB Failure Rate</p>
+                  <p className="mt-2 text-2xl font-semibold">{(dbMetrics?.failed_query_rate_pct ?? 0).toFixed(1)}%</p>
+                </div>
+                <div className="rounded-md border p-4">
+                  <p className="text-xs uppercase text-muted-foreground">DB P95 Query</p>
+                  <p className="mt-2 text-2xl font-semibold">{(dbMetrics?.p95_query_latency_ms ?? 0).toFixed(0)} ms</p>
+                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-4">
+                <div className="rounded-md border p-4">
                   <p className="text-xs uppercase text-muted-foreground">Total Error Rate</p>
                   <p className="mt-2 text-2xl font-semibold">{metricsOverview.error_rate_pct.toFixed(1)}%</p>
                 </div>
@@ -470,6 +493,40 @@ export default function AdminPage() {
                       </div>
                     )}
                   </div>
+                )}
+              </div>
+
+              <div className="rounded-md border overflow-hidden">
+                <div className="border-b px-4 py-3">
+                  <h3 className="text-sm font-semibold">Database Metrics</h3>
+                </div>
+                {!dbMetrics || dbMetrics.services.length === 0 ? (
+                  <p className="px-4 py-4 text-sm text-muted-foreground">
+                    No database metrics have been recorded yet.
+                  </p>
+                ) : (
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted text-muted-foreground">
+                      <tr>
+                        <th className="px-4 py-2 text-left font-medium">Service</th>
+                        <th className="px-4 py-2 text-left font-medium">Queries</th>
+                        <th className="px-4 py-2 text-left font-medium">Failed</th>
+                        <th className="px-4 py-2 text-left font-medium">Failure Rate</th>
+                        <th className="px-4 py-2 text-left font-medium">P95 Query</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {dbMetrics.services.map((service) => (
+                        <tr key={service.service_name} className="border-t">
+                          <td className="px-4 py-2 font-medium">{service.service_name}</td>
+                          <td className="px-4 py-2">{service.query_count}</td>
+                          <td className="px-4 py-2">{service.failed_query_count}</td>
+                          <td className="px-4 py-2">{service.failed_query_rate_pct.toFixed(1)}%</td>
+                          <td className="px-4 py-2">{service.p95_query_latency_ms.toFixed(0)} ms</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 )}
               </div>
 

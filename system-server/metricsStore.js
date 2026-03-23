@@ -66,6 +66,34 @@ async function recordMetricEvent(event) {
   return { ok: true };
 }
 
+async function recordDbMetricEvent(event) {
+  await initMetricsTable();
+  const occurredAtMs = toNumber(event.occurred_at_ms, Date.now());
+  await ensureTableAndRetry(() =>
+    pool.query(
+      `
+        INSERT INTO public.db_metric_event (
+          service_name,
+          operation,
+          success,
+          latency_ms,
+          occurred_at
+        )
+        VALUES ($1, $2, $3, $4, TO_TIMESTAMP($5 / 1000.0))
+      `,
+      [
+        event.service_name || "unknown",
+        event.operation || "query",
+        Boolean(event.success),
+        toNumber(event.latency_ms),
+        occurredAtMs,
+      ]
+    )
+  );
+
+  return { ok: true };
+}
+
 async function getMetricsOverview(request = {}) {
   await initMetricsTable();
   const windowMinutes = Math.max(1, toNumber(request.window_minutes, DEFAULT_WINDOW_MINUTES));
@@ -157,6 +185,81 @@ async function getMetricsOverview(request = {}) {
     error_rate_pct: toNumber(overview.error_rate_pct),
     p95_latency_ms: toNumber(overview.p95_latency_ms),
     services: servicesResult.rows.map(normalizeSummaryRow),
+  };
+}
+
+async function getDbMetricsOverview(request = {}) {
+  await initMetricsTable();
+  const windowMinutes = Math.max(1, toNumber(request.window_minutes, DEFAULT_WINDOW_MINUTES));
+
+  const [overviewResult, servicesResult] = await Promise.all([
+    ensureTableAndRetry(() =>
+      pool.query(
+        `
+          WITH filtered AS (
+            SELECT *
+            FROM public.db_metric_event
+            WHERE occurred_at >= NOW() - MAKE_INTERVAL(mins => $1)
+          )
+          SELECT
+            COUNT(*)::int AS query_count,
+            COUNT(*) FILTER (WHERE success = false)::int AS failed_query_count,
+            COALESCE(
+              ROUND((COUNT(*) FILTER (WHERE success = false) * 100.0 / NULLIF(COUNT(*), 0))::numeric, 1),
+              0
+            )::float8 AS failed_query_rate_pct,
+            COALESCE(
+              percentile_cont(0.95) WITHIN GROUP (ORDER BY latency_ms),
+              0
+            )::float8 AS p95_query_latency_ms
+          FROM filtered
+        `,
+        [windowMinutes]
+      )
+    ),
+    ensureTableAndRetry(() =>
+      pool.query(
+        `
+          WITH filtered AS (
+            SELECT *
+            FROM public.db_metric_event
+            WHERE occurred_at >= NOW() - MAKE_INTERVAL(mins => $1)
+          )
+          SELECT
+            service_name,
+            COUNT(*)::int AS query_count,
+            COUNT(*) FILTER (WHERE success = false)::int AS failed_query_count,
+            COALESCE(
+              ROUND((COUNT(*) FILTER (WHERE success = false) * 100.0 / NULLIF(COUNT(*), 0))::numeric, 1),
+              0
+            )::float8 AS failed_query_rate_pct,
+            COALESCE(
+              percentile_cont(0.95) WITHIN GROUP (ORDER BY latency_ms),
+              0
+            )::float8 AS p95_query_latency_ms
+          FROM filtered
+          GROUP BY service_name
+          ORDER BY service_name
+        `,
+        [windowMinutes]
+      )
+    ),
+  ]);
+
+  const overview = overviewResult.rows[0] ?? {};
+  return {
+    window_minutes: windowMinutes,
+    query_count: String(toNumber(overview.query_count)),
+    failed_query_count: String(toNumber(overview.failed_query_count)),
+    failed_query_rate_pct: toNumber(overview.failed_query_rate_pct),
+    p95_query_latency_ms: toNumber(overview.p95_query_latency_ms),
+    services: servicesResult.rows.map((row) => ({
+      service_name: row.service_name,
+      query_count: String(toNumber(row.query_count)),
+      failed_query_count: String(toNumber(row.failed_query_count)),
+      failed_query_rate_pct: toNumber(row.failed_query_rate_pct),
+      p95_query_latency_ms: toNumber(row.p95_query_latency_ms),
+    })),
   };
 }
 
@@ -346,9 +449,11 @@ async function getBackupStatus() {
 
 module.exports = {
   getBackupStatus,
+  getDbMetricsOverview,
   getMetricsOverview,
   getMetricsTimeseries,
   listIncidents,
   recordBackupRun,
+  recordDbMetricEvent,
   recordMetricEvent,
 };

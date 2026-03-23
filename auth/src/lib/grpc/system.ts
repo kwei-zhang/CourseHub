@@ -2,6 +2,8 @@ import grpc from "@grpc/grpc-js";
 import type {
   GetBackupStatusRequest,
   GetBackupStatusResponse,
+  GetDbMetricsOverviewRequest,
+  GetDbMetricsOverviewResponse,
   GetMetricsOverviewRequest,
   GetMetricsOverviewResponse,
   GetMetricsTimeseriesRequest,
@@ -11,6 +13,8 @@ import type {
   ListIncidentsResponse,
   RecordBackupRunRequest,
   RecordBackupRunResponse,
+  RecordDbMetricEventRequest,
+  RecordDbMetricEventResponse,
   RecordMetricEventRequest,
   RecordMetricEventResponse,
 } from "../../types/grpc";
@@ -41,6 +45,22 @@ export function systemRecordMetricEvent(
   });
 }
 
+export function systemRecordDbMetricEvent(
+  request: RecordDbMetricEventRequest,
+  metadata?: grpc.Metadata
+): Promise<RecordDbMetricEventResponse> {
+  return new Promise((resolve, reject) => {
+    systemClient.recordDbMetricEvent(
+      request,
+      metadata ?? new grpc.Metadata(),
+      (err: Error | null, res?: RecordDbMetricEventResponse) => {
+        if (err) reject(err);
+        else resolve(res ?? { ok: false });
+      }
+    );
+  });
+}
+
 export function systemGetMetricsOverview(
   request: GetMetricsOverviewRequest,
   metadata?: grpc.Metadata
@@ -63,6 +83,33 @@ export function systemGetMetricsOverview(
               server_error_rate_pct: 0,
               error_rate_pct: 0,
               p95_latency_ms: 0,
+              services: [],
+            }
+          );
+        }
+      }
+    );
+  });
+}
+
+export function systemGetDbMetricsOverview(
+  request: GetDbMetricsOverviewRequest,
+  metadata?: grpc.Metadata
+): Promise<GetDbMetricsOverviewResponse> {
+  return new Promise((resolve, reject) => {
+    systemClient.getDbMetricsOverview(
+      request,
+      metadata ?? new grpc.Metadata(),
+      (err: Error | null, res?: GetDbMetricsOverviewResponse) => {
+        if (err) reject(err);
+        else {
+          resolve(
+            res ?? {
+              window_minutes: request.window_minutes ?? 1440,
+              query_count: 0,
+              failed_query_count: 0,
+              failed_query_rate_pct: 0,
+              p95_query_latency_ms: 0,
               services: [],
             }
           );

@@ -7,6 +7,7 @@ import {
   resourceListAllResources,
   resourceDeleteResource,
   systemGetBackupStatus,
+  systemGetDbMetricsOverview,
   systemGetMetricsOverview,
   systemGetMetricsTimeseries,
   systemListIncidents,
@@ -168,6 +169,17 @@ router.get("/metrics/backups", async (req: Request, res: Response): Promise<void
   try {
     const metadata = req.user ? metadataForUser(req.user.id) : undefined;
     const data = await systemGetBackupStatus({}, metadata);
+    res.json(data);
+  } catch (err) {
+    grpcErr(err, res);
+  }
+});
+
+router.get("/metrics/database", async (req: Request, res: Response): Promise<void> => {
+  const windowMinutes = Number(req.query.window_minutes) || 24 * 60;
+  try {
+    const metadata = req.user ? metadataForUser(req.user.id) : undefined;
+    const data = await systemGetDbMetricsOverview({ window_minutes: windowMinutes }, metadata);
     res.json(data);
   } catch (err) {
     grpcErr(err, res);
