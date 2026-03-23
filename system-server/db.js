@@ -56,6 +56,27 @@ async function initMetricsTable() {
     CREATE INDEX IF NOT EXISTS idx_backup_run_started_at
     ON public.backup_run (started_at DESC);
   `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS public.db_metric_event (
+      id BIGSERIAL PRIMARY KEY,
+      service_name TEXT NOT NULL,
+      operation TEXT NOT NULL,
+      success BOOLEAN NOT NULL,
+      latency_ms INTEGER NOT NULL,
+      occurred_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_db_metric_event_occurred_at
+    ON public.db_metric_event (occurred_at DESC);
+  `);
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_db_metric_event_service_name_occurred_at
+    ON public.db_metric_event (service_name, occurred_at DESC);
+  `);
   })().catch((err) => {
     initPromise = null;
     throw err;

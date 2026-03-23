@@ -74,3 +74,20 @@ export type BackupStatus = {
   latest_object_key: string;
   latest_error_message: string;
 };
+
+export type DbMetricSummary = {
+  service_name: string;
+  query_count: number | string;
+  failed_query_count: number | string;
+  failed_query_rate_pct: number;
+  p95_query_latency_ms: number;
+};
+
+export type DbMetricsOverview = {
+  window_minutes: number;
+  query_count: number | string;
+  failed_query_count: number | string;
+  failed_query_rate_pct: number;
+  p95_query_latency_ms: number;
+  services: DbMetricSummary[];
+};

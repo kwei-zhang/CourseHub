@@ -5,10 +5,12 @@ const protoLoader = require('@grpc/proto-loader');
 const { initMetricsTable } = require('./db');
 const {
   getBackupStatus,
+  getDbMetricsOverview,
   getMetricsOverview,
   getMetricsTimeseries,
   listIncidents,
   recordBackupRun,
+  recordDbMetricEvent,
   recordMetricEvent,
 } = require('./metricsStore');
 
@@ -87,9 +89,23 @@ server.addService(proto.SystemService.service, {
       callback(err);
     }
   },
+  recordDbMetricEvent: async (call, callback) => {
+    try {
+      callback(null, await recordDbMetricEvent(call.request));
+    } catch (err) {
+      callback(err);
+    }
+  },
   getMetricsOverview: async (call, callback) => {
     try {
       callback(null, await getMetricsOverview(call.request));
+    } catch (err) {
+      callback(err);
+    }
+  },
+  getDbMetricsOverview: async (call, callback) => {
+    try {
+      callback(null, await getDbMetricsOverview(call.request));
     } catch (err) {
       callback(err);
     }

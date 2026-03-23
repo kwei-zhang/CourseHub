@@ -24,6 +24,7 @@ services:
       - "5001:5001"
     environment:
       DATABASE_URL: postgresql://ece1779:ece1779@db:5432/ece1779
+      SYSTEM_SERVER: system-server:5003
     depends_on:
       db:
         condition: service_healthy
@@ -37,6 +38,7 @@ services:
       - "5002:5002"
     environment:
       DATABASE_URL: postgresql://ece1779:ece1779@db:5432/ece1779?schema=files
+      SYSTEM_SERVER: system-server:5003
       SPACES_BUCKET: ${SPACES_BUCKET}
       SPACES_KEY: ${SPACES_KEY}
       SPACES_SECRET: ${SPACES_SECRET}

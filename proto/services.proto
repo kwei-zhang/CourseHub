@@ -284,7 +284,9 @@ service FileService {
 service SystemService {
   rpc Get(GetRequest) returns (GetResponse);
   rpc RecordMetricEvent(RecordMetricEventRequest) returns (RecordMetricEventResponse);
+  rpc RecordDbMetricEvent(RecordDbMetricEventRequest) returns (RecordDbMetricEventResponse);
   rpc GetMetricsOverview(GetMetricsOverviewRequest) returns (GetMetricsOverviewResponse);
+  rpc GetDbMetricsOverview(GetDbMetricsOverviewRequest) returns (GetDbMetricsOverviewResponse);
   rpc GetMetricsTimeseries(GetMetricsTimeseriesRequest) returns (GetMetricsTimeseriesResponse);
   rpc ListIncidents(ListIncidentsRequest) returns (ListIncidentsResponse);
   rpc RecordBackupRun(RecordBackupRunRequest) returns (RecordBackupRunResponse);
@@ -303,7 +305,23 @@ message RecordMetricEventResponse {
   bool ok = 1;
 }
 
+message RecordDbMetricEventRequest {
+  string service_name = 1;
+  string operation = 2;
+  bool success = 3;
+  int32 latency_ms = 4;
+  int64 occurred_at_ms = 5;
+}
+
+message RecordDbMetricEventResponse {
+  bool ok = 1;
+}
+
 message GetMetricsOverviewRequest {
+  int32 window_minutes = 1;
+}
+
+message GetDbMetricsOverviewRequest {
   int32 window_minutes = 1;
 }
 
@@ -330,6 +348,23 @@ message GetMetricsOverviewResponse {
   double error_rate_pct = 8;
   double p95_latency_ms = 9;
   repeated ServiceMetricSummary services = 10;
+}
+
+message DbMetricSummary {
+  string service_name = 1;
+  int64 query_count = 2;
+  int64 failed_query_count = 3;
+  double failed_query_rate_pct = 4;
+  double p95_query_latency_ms = 5;
+}
+
+message GetDbMetricsOverviewResponse {
+  int32 window_minutes = 1;
+  int64 query_count = 2;
+  int64 failed_query_count = 3;
+  double failed_query_rate_pct = 4;
+  double p95_query_latency_ms = 5;
+  repeated DbMetricSummary services = 6;
 }
 
 message GetMetricsTimeseriesRequest {
