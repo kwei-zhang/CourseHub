@@ -147,19 +147,39 @@ async function start() {
   await initMetricsTable();
   storageReady = true;
 
-  server.bindAsync(
-    `0.0.0.0:${PORT}`,
-    grpc.ServerCredentials.createInsecure(),
-    (err, port) => {
-      if (err) {
-        console.error(err);
-        process.exit(1);
+  const boundPort = await new Promise((resolve, reject) => {
+    server.bindAsync(
+      `0.0.0.0:${PORT}`,
+      grpc.ServerCredentials.createInsecure(),
+      (err, port) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        resolve(port);
       }
-      grpcReady = true;
-      console.log(`System server (gRPC) listening on port ${port}`);
-    }
-  );
+    );
+  });
+
+  grpcReady = true;
+  console.log(`System server (gRPC) listening on port ${boundPort}`);
 }
+
+process.on('SIGTERM', async () => {
+  grpcReady = false;
+  storageReady = false;
+  healthServer.close();
+  server.forceShutdown();
+  process.exit(0);
+});
+
+process.on('SIGINT', async () => {
+  grpcReady = false;
+  storageReady = false;
+  healthServer.close();
+  server.forceShutdown();
+  process.exit(0);
+});
 
 start().catch((err) => {
   console.error(err);

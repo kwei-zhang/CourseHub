@@ -13,8 +13,10 @@ import {
   systemListIncidents,
 } from "../../lib/grpc";
 import { metadataForUser } from "../../lib/grpcProxy";
+import { prisma } from "../../lib/prisma";
 
 const router = Router();
+const enableMetricTestRoutes = process.env.ENABLE_METRIC_TEST_ROUTES === "true";
 
 function grpcErr(err: unknown, res: Response): void {
   const code = (err as { code?: number })?.code;
@@ -183,6 +185,56 @@ router.get("/metrics/database", async (req: Request, res: Response): Promise<voi
     res.json(data);
   } catch (err) {
     grpcErr(err, res);
+  }
+});
+
+router.post("/metrics/database/test-failure", async (req: Request, res: Response): Promise<void> => {
+  if (!enableMetricTestRoutes) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+
+  const nonce = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  const email = `db-metric-test-${nonce}@local.test`;
+
+  try {
+    await prisma.user.create({
+      data: {
+        name: "DB Metric Test User",
+        email,
+        role: "user",
+      },
+    });
+
+    try {
+      await prisma.user.create({
+        data: {
+          name: "DB Metric Test User",
+          email,
+          role: "user",
+        },
+      });
+
+      res.status(500).json({ error: "Expected duplicate-email insert to fail" });
+      return;
+    } catch {
+      res.status(201).json({
+        ok: true,
+        message: "Triggered one duplicate-key database failure for metrics testing",
+        email,
+      });
+      return;
+    }
+  } catch (err) {
+    console.error("DB metric test route failed:", err);
+    res.status(500).json({ error: "Failed to run DB metric test" });
+    return;
+  } finally {
+    try {
+      await prisma.user.deleteMany({ where: { email } });
+    } catch (cleanupErr) {
+      console.error("DB metric test cleanup failed:", cleanupErr);
+    }
   }
 });
 

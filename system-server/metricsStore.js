@@ -31,7 +31,7 @@ async function ensureTableAndRetry(operation) {
     return await operation();
   } catch (err) {
     if (err && err.code === "42P01") {
-      await initMetricsTable();
+      await initMetricsTable({ force: true });
       return operation();
     }
     throw err;

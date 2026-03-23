@@ -91,6 +91,7 @@ services:
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-replace-me-with-32-char-secret-min}
       BETTER_AUTH_URL: http://localhost:4000
       FRONTEND_URL: http://localhost:3000
+      ENABLE_METRIC_TEST_ROUTES: "true"
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
     depends_on:
@@ -103,6 +104,18 @@ services:
       system-server:
         condition: service_healthy
     restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:4000/health/ready').then((res) => process.exit(res.ok ? 0 : 1)).catch(() => process.exit(1))"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 5s
 
   frontend:
     build:
@@ -114,7 +127,7 @@ services:
       - "3000:3000"
     depends_on:
       auth:
-        condition: service_started
+        condition: service_healthy
     restart: unless-stopped
 
 volumes:

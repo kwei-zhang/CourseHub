@@ -12,12 +12,7 @@ const pool = new Pool({
 
 let initPromise = null;
 
-async function initMetricsTable() {
-  if (initPromise) {
-    return initPromise;
-  }
-
-  initPromise = (async () => {
+async function runSchemaInit() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS public.metric_event (
       id BIGSERIAL PRIMARY KEY,
@@ -77,6 +72,17 @@ async function initMetricsTable() {
     CREATE INDEX IF NOT EXISTS idx_db_metric_event_service_name_occurred_at
     ON public.db_metric_event (service_name, occurred_at DESC);
   `);
+}
+
+async function initMetricsTable(options = {}) {
+  const { force = false } = options;
+
+  if (!force && initPromise) {
+    return initPromise;
+  }
+
+  initPromise = (async () => {
+    await runSchemaInit();
   })().catch((err) => {
     initPromise = null;
     throw err;
