@@ -48,7 +48,7 @@ This project is a full-stack learning resource management system built with a mi
 -   lucide-react  for icons
 -   sonner  for notifications
 
-The frontend lives in  [frontend](/frontend)  and is responsible for the user-facing web interface, including login, resource browsing, uploads, profile views, course management, and admin dashboards.
+The frontend lives in  [frontend](/frontend/)  and is responsible for the user-facing web interface, including login, resource browsing, uploads, profile views, course management, and admin dashboards.
 
 **API Gateway and Authentication**
 
@@ -117,7 +117,7 @@ The project includes a serverless function for sending announcement emails. The 
 -   Horizontal Pod Autoscaler
 -   CronJob  for automated backups
 
-The system supports both local development and cloud deployment. Docker Compose is used for local orchestration, while Kubernetes manifests in  [k8s](/k8s)  define the production-style deployment layout.
+The system supports both local development and cloud deployment. Docker Compose is used for local orchestration, while Kubernetes manifests in  [k8s](/k8s/)  define the production-style deployment layout.
 
 **Observability and Operations**
 
@@ -139,8 +139,8 @@ This project uses a  **two-layer orchestration approach**: Docker Compose for lo
 
 For local development and testing, the system is orchestrated with Docker Compose using files such as:
 
--   [docker-compose.local.yml]()
--   [docker-compose.yml]()
+-   [docker-compose.local.yml](/docker-compose.local.yml)
+-   [docker-compose.yml](/docker-compose.yml)
 
 In this mode:
 
@@ -155,7 +155,7 @@ This is a practical development orchestration setup because it keeps the full di
 
 **2. Cluster orchestration with Kubernetes**
 
-For deployment, the project moves to Kubernetes-based orchestration using manifests under  [k8s](/).
+For deployment, the project moves to Kubernetes-based orchestration using manifests under  [k8s](/k8s/).
 
 The Kubernetes setup includes:
 
