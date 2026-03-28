@@ -421,4 +421,34 @@ The deployed application can be found at https://chalatus.com/login.
 | Chengguang Li (lcg077) | frontend implementation |  
 
 ## Lessons Learned and Concluding Remarks
+Through the development of the Learning Resource Management System (LRMS), our team gained valuable experience in both cloud-native system design and collaborative software engineering.
+
+1. System Design and Architecture
+
+One of the most important lessons was understanding how a distributed, microservice-based architecture differs from a monolithic system. While separating the system into services (auth, user-server, file-server, system-server) improved modularity and scalability, it also introduced additional complexity in communication, debugging, and deployment. In particular, using gRPC for internal communication required careful coordination of service interfaces and protobuf definitions.
+
+2. Working with Cloud-Native Technologies
+
+This project deepened our understanding of cloud-native development. We learned how containerization (Docker) simplifies environment consistency, while Kubernetes provides more advanced orchestration features such as scaling, health checks, and automated recovery. However, compared to Docker Compose, Kubernetes has a steeper learning curve and requires more configuration, especially for networking, storage, and deployment management.
+
+3. Handling Stateful Systems
+
+Managing persistent data (PostgreSQL and object storage) highlighted the challenges of building stateful applications. We learned the importance of backup strategies, data consistency, and recovery planning. Implementing automated backups and ensuring data durability were critical for system reliability.
+
+4. Observability and Debugging
+
+Another key takeaway was the importance of monitoring and observability. By tracking metrics such as request latency, system health, and database performance, we were able to better understand system behavior and identify issues. Debugging in a distributed system is significantly more difficult than in a single application, as errors may originate from multiple services.
+
+5. Frontend–Backend Integration
+
+Integrating the frontend with backend APIs required careful design of endpoints and consistent data formats. We learned how authentication, authorization, and API validation affect the overall user experience. Ensuring smooth interaction between the frontend and backend services was essential for building a reliable application.
+
+6. Team Collaboration
+
+From a teamwork perspective, we learned the importance of clear task division, communication, and version control. Working with multiple services and contributors made it necessary to maintain consistent coding practices and avoid integration conflicts. Regular coordination helped ensure that different components of the system worked together correctly.
+
+Conclusion
+
+Overall, this project provided hands-on experience in building a full-stack, cloud-native application. It strengthened our understanding of core cloud computing concepts, including containerization, microservices architecture, Kubernetes-based orchestration, and system scalability. These lessons will be valuable for future work involving distributed systems and cloud-based applications.
+
 ## Video Demo
