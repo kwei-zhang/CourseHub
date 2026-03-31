@@ -411,6 +411,13 @@ docker compose up -d
 The deployed application can be found at https://chalatus.com/login.
 
 ## AI Assistance & Verification
+We used AI in a limited and practical way during the project, mainly when we ran into specific technical issues during development, integration, and deployment. Most of the system design, implementation, and integration work was still completed by our team. AI was most helpful when a problem had several possible causes and we needed a clearer place to start. In those cases, it helped us organize our troubleshooting steps and decide what to check first.
+
+One representative example was during our Kubernetes deployment stage. Some features, such as file upload and course enrollment, were not working correctly after deployment even though related parts of the system worked locally. We used AI to help think through the problem, and it suggested several areas to inspect, including ingress routing, service paths, environment variables, secrets, and database setup. This was helpful because it turned a broad deployment issue into a smaller set of checks and gave us a more systematic way to review our manifests, routes, and configuration files.
+
+AI was also helpful in a few smaller situations. For example, when services were not communicating as expected, it helped us think through whether the issue was more likely to come from routing, environment configuration, or path mismatches between the frontend and backend. It was also useful when checking deployment settings that could behave differently in local and cloud environments.
+
+At the same time, we learned that AI suggestions were not always fully correct for our actual project. Some ideas sounded reasonable, but were not the real cause in our setup. For example, one suggestion was to check whether auth database initialization was missing. That was still worth verifying, but after comparing it with our deployment files, request paths, logs, and testing results, we found that the more important issues were related to secret handling and duplicated API paths in the deployed system. This made us treat AI as a debugging reference rather than a final answer. We learned that AI is useful for narrowing down possible causes, but the final judgment still had to come from our own checks. More specific examples are included in `ai-session.md`.
 
 ## Contributions
 | Name/Github Username | Contributions | 	
