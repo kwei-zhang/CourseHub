@@ -187,18 +187,18 @@ The orchestration strategy matches the architecture well:
 
 
 ## **Features**
--   **Structured Metadata File Storage:** Each learning resource (e.g., PDF, slides, video) will include structured metadata such as title, course code, topic, instructor, upload date, and tags. This enables efficient filtering, categorization, and search functionality.
--   **Role-Based Access Control (RBAC):** Users will be assigned roles (Instructor, Teaching Assistant, Student) with clearly defined permissions. Instructors can upload, edit, and delete resources; TAs may manage selected content; students can view and download permitted materials. Authorization logic will be enforced at the API layer.
--   **Cloud Deployment:** The application will be containerized using Docker and deployed on DigitalOcean. Kubernetes will be used for container orchestration, enabling scalable, resilient, and managed deployment of backend services, frontend components, and supporting infrastructure.
--   **Monitoring:** Monitoring will be implemented using **DigitalOcean’s monitoring and alerting services** in combination with Kubernetes-native tools. Metrics such as CPU usage, memory consumption, pod health, and application performance will be tracked through dashboards to ensure system reliability and availability.
+-   **Structured Resource Storage:** Each learning resource stores core metadata including title, course code, content type, visibility policy, uploader, and tags. Users can browse resources by course and search by title or tag.
+-   **Role-Based Access Control (RBAC):** The implemented user-facing roles are **Student**, **Instructor**, and **Admin**. Students can view and download resources available to them, instructors can upload and manage course resources, and admins can manage platform-wide resources, courses, announcements, and monitoring data. The backend also includes policy handling for TA-scoped resource visibility, and authorization is enforced at the API layer and in backend service checks.
+-   **Cloud Deployment:** The application is containerized with Docker and supports both local orchestration with Docker Compose and cloud deployment on DigitalOcean Kubernetes, including ingress-based routing and autoscaling for selected services.
+-   **Monitoring and Operational Visibility:** The platform includes built-in monitoring for request traffic, latency, database performance, incident reporting, backup status, and service health checks. These metrics are exposed through the admin monitoring dashboard, while DigitalOcean dashboards can be used for infrastructure-level observation.
 -   **Security Enhancements**
     -   Enforced **HTTPS** for encrypted communication.
-    -   Secure **secrets management** for database credentials and API keys using environment variables or a cloud secrets manager.
-    -   Container security best practices during deployment.
--   **Persistent Data Storage & Backup and Recovery Strategy**
-    -   **PostgreSQL** database for storing user accounts, metadata, access logs, and permissions.
-    -   Automated database backups scheduled regularly with backups stored in secure cloud object storage.
-    -   Clear recovery procedure to restore the system from backup in case of failure and periodic testing of backup integrity to ensure recoverability.
+    -   Secret-based configuration for database credentials, object storage credentials, and service tokens.
+    -   Role-checked API access for protected routes and administrative operations.
+-   **Persistent Data Storage & Backup Strategy**
+    -   **PostgreSQL** database for storing user accounts, metadata, access logs, permissions, and operational records.
+    -   Automated database backups scheduled with a Kubernetes CronJob and uploaded to secure cloud object storage.
+    -   Backup run status is recorded and exposed through the system monitoring interface.
 
 ## User Guide
 This section provides detailed instruction on how to use the basic functions of LRMS for the 3 different types of accounts (Student, Instructor, Admin).
