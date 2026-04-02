@@ -5,7 +5,6 @@ on:
     branches:
       - main
       - prod
-      - lihang-deploy-work
   pull_request:
 
 jobs:
@@ -23,9 +22,6 @@ jobs:
 
       - name: Validate docker-compose.local.yml
         run: docker compose -f docker-compose.local.yml config
-
-      - name: Validate docker-compose.yml
-        run: docker compose -f docker-compose.yml config
 
       - name: Build auth image
         run: docker build -f auth/Dockerfile -t auth-test .

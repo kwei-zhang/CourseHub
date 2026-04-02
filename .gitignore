@@ -22,14 +22,17 @@ npm-debug.log*
 .DS_Store
 Thumbs.db
 
-# IDE (uncomment if you don't want to share)
-# .idea/
-# .vscode/
-# *.swp
-# *.swo
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
 
 # Docker
 .docker/
+
+# DigitalOcean Functions deploy metadata
+functions/.deployed/
 
 # Optional: local overrides
 *.local

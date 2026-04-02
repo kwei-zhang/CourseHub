@@ -10,7 +10,7 @@
 8. [AI Assistance & Verification](#AI-Assistance-&-Verification)
 9. [Individual Contributions](#Contributions)
 10. [Lessons Learned](#lessons-learned-and-concluding-remarks)
-11.[Video Demo](#video-demo)
+11. [Video Demo](#video-demo)
 
 ## Team information
 | Name/Github Username | Email | Student Number |  	
