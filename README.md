@@ -137,10 +137,7 @@ This project uses a  **two-layer orchestration approach**: Docker Compose for lo
 
 **1. Local orchestration with Docker Compose**
 
-For local development and testing, the system is orchestrated with Docker Compose using files such as:
-
--   [docker-compose.local.yml](/docker-compose.local.yml)
--   [docker-compose.yml](/docker-compose.yml)
+For local development and testing, the system is orchestrated with Docker Compose using [docker-compose.local.yml](/docker-compose.local.yml).
 
 In this mode:
 
@@ -305,7 +302,17 @@ _All functionality below assumes you are logged into a student account and on th
 
 
 ## Development Guide
-## Overall architecture
+
+This section covers everything needed to set up, run, and develop the LRMS application locally.
+
+### Prerequisites
+
+- **Node.js** v18 or later and **npm**
+- **Docker** and **Docker Compose** (for containerized local development)
+- **PostgreSQL** 16 (only if running services without Docker)
+- A **DigitalOcean Spaces** bucket (or any S3-compatible object storage) for file uploads
+
+### Overall Architecture
 
 ```
                     ┌───────────┐
@@ -324,91 +331,234 @@ _All functionality below assumes you are logged into a student account and on th
     └───────────┘   └───────────┘   └───────────┘
 ```
 
-- **Frontend** → **Auth**: REST (HTTP/JSON). All client requests go through auth.
-- **Auth** → **User / File / System servers**: gRPC (binary, HTTP/2). Auth is a REST gateway and gRPC client.
+- **Frontend → Auth**: REST (HTTP/JSON). All client requests go through auth.
+- **Auth → User / File / System servers**: gRPC (binary, HTTP/2). Auth acts as a REST gateway and gRPC client.
 
-## Folder structure
+The `auth` service is the single entry point for all frontend traffic. It handles authentication (via Better Auth), enforces role-based access control, and proxies requests to the appropriate backend gRPC service. The backend services never receive requests directly from the frontend.
+
+### Folder Structure
 
 ```
 ECE1779-Project/
-├── proto/           # Shared .proto definitions (used by auth + all servers)
-├── frontend/        # Frontend app (talks to auth via REST)
-├── auth/            # Auth service: REST API + gRPC client to backend servers
-├── user-server/     # User server (gRPC)
-├── file-server/     # File server (gRPC)
-├── system-server/   # System server (gRPC)
-└── integration-test/ # Integration tests (run after docker compose up)
+├── proto/              # Shared .proto definitions (used by auth + all servers)
+├── frontend/           # Next.js frontend app (talks to auth via REST)
+├── auth/               # Auth service: REST API + gRPC client to backend servers
+├── user-server/        # User/course/enrollment management (gRPC)
+├── file-server/        # Resource metadata + S3 presigned URLs (gRPC)
+├── system-server/      # Metrics, incidents, backups, health (gRPC)
+├── functions/          # Serverless functions (e.g. announcement emails via Resend)
+├── k8s/                # Kubernetes manifests for production deployment
+└── docker-compose.local.yml   # Local development orchestration (Docker Compose)
 ```
 
-## How to run
+### Service Ports
 
-1. **Install dependencies** in each service (once):
+| Service         | Protocol | Default Port | Description                          |
+|-----------------|----------|--------------|--------------------------------------|
+| **frontend**    | HTTP     | 3000         | Next.js web application              |
+| **auth**        | HTTP     | 4000         | REST API gateway + authentication    |
+| **user-server** | gRPC     | 5001         | User, course, and enrollment service |
+| **file-server** | gRPC     | 5002         | Resource metadata + file URLs        |
+| **system-server** | gRPC   | 5003         | System metrics and health            |
+| **db**          | TCP      | 5432         | PostgreSQL database                  |
 
-   ```bash
-   cd user-server && npm install && cd ..
-   cd file-server && npm install && cd ..
-   cd system-server && npm install && cd ..
-   cd auth && npm install && cd ..
-   ```
+### Environment Setup
 
-2. **Start the gRPC servers** (in separate terminals):
+Each backend service requires a `.env` file. Example templates are provided:
 
-   ```bash
-   cd user-server && npm start   # port 5001
-   cd file-server && npm start  # port 5002
-   cd system-server && npm start # port 5003
-   ```
+- `auth/.env.example` — database URL, Better Auth secret/URL, frontend URL, gRPC targets
+- `user-server/.env.example` — database URL
+- `file-server/.env.example` — database URL, DigitalOcean Spaces credentials
 
-3. **Start the Auth gateway**:
+Copy each `.env.example` to `.env` and fill in the values:
 
-   ```bash
-   cd auth && npm start   # REST on port 3000
-   ```
+```bash
+cp auth/.env.example auth/.env
+cp user-server/.env.example user-server/.env
+cp file-server/.env.example file-server/.env
+```
 
-4. **Call the API** (frontend or curl):
+Key variables:
 
-   ```bash
-   curl http://localhost:3000/user/get   # {"message":"hello"}
-   curl -H "Authorization: Bearer <token>" http://localhost:3000/user/<userId>   # get user info by id
-   curl http://localhost:3000/file/get   # {"message":"hello"}
-   curl http://localhost:3000/system/get # {"message":"hello"}
-   ```
+| Variable               | Service       | Description                                    |
+|------------------------|---------------|------------------------------------------------|
+| `DATABASE_URL`         | all backends  | PostgreSQL connection string                   |
+| `BETTER_AUTH_SECRET`   | auth          | Secret key for session signing (min 32 chars)  |
+| `BETTER_AUTH_URL`      | auth          | Public URL of the auth service                 |
+| `FRONTEND_URL`         | auth          | Public URL of the frontend (for CORS)          |
+| `SPACES_BUCKET`        | file-server   | DigitalOcean Spaces bucket name                |
+| `SPACES_KEY`           | file-server   | Spaces access key ID                           |
+| `SPACES_SECRET`        | file-server   | Spaces secret access key                       |
 
-### Run with Docker
+### Running Locally with Docker Compose (Recommended)
 
-From the project root:
+The easiest way to run the full system locally is with Docker Compose. This starts all services, a PostgreSQL database, and wires them together automatically.
 
 ```bash
 docker compose -f docker-compose.local.yml up -d --build
 ```
 
-- **user-server** (gRPC): 5001  
-- **file-server** (gRPC): 5002  
-- **system-server** (gRPC): 5003  
-- **auth** (REST): 3000  
+This provisions:
 
-Then: `curl http://localhost:3000/`.
+- A PostgreSQL 16 container with a health check
+- All four backend services connected to the database
+- The frontend, built with the auth URL set to `http://localhost:4000`
+- Proper startup ordering via `depends_on` and health checks
 
-### Integration tests (after Docker is up)
+Once running:
 
-```bash
-cd integration-test
-npm install
-npm test
-```
+- **Frontend**: http://localhost:3000
+- **Auth API**: http://localhost:4000
 
-See `integration-test/README.md` for details.
-
-**If auth fails with "failed migrations" (e.g. P3009):** reset the DB and rebuild auth so migrations run in a clean state:
+To tear everything down (including database volumes):
 
 ```bash
-docker compose down -v
-docker compose build --no-cache auth
-docker compose up -d
+docker compose -f docker-compose.local.yml down -v
 ```
+
+**Troubleshooting: auth fails with "failed migrations" (e.g. P3009)**
+
+Reset the database and rebuild auth so Prisma migrations run against a clean state:
+
+```bash
+docker compose -f docker-compose.local.yml down -v
+docker compose -f docker-compose.local.yml build --no-cache auth
+docker compose -f docker-compose.local.yml up -d
+```
+
+### Running Services Individually (Without Docker)
+
+If you prefer to run services directly on your machine (e.g. for faster iteration during development), follow these steps. You will need a running PostgreSQL instance.
+
+1. **Install dependencies** in each service:
+
+```bash
+cd user-server && npm install && cd ..
+cd file-server && npm install && cd ..
+cd system-server && npm install && cd ..
+cd auth && npm install && cd ..
+cd frontend && npm install && cd ..
+```
+
+2. **Run Prisma migrations** to initialize the database schemas:
+
+```bash
+cd auth && npx prisma migrate deploy && cd ..
+cd user-server && npx prisma migrate deploy && cd ..
+cd file-server && npx prisma migrate deploy && cd ..
+```
+
+3. **Start the gRPC servers** (each in a separate terminal):
+
+```bash
+cd user-server && npm start     # gRPC on port 5001
+cd file-server && npm start     # gRPC on port 5002
+cd system-server && npm start   # gRPC on port 5003
+```
+
+4. **Start the Auth gateway**:
+
+```bash
+cd auth && npm start   # REST on port 4000
+```
+
+5. **Start the frontend**:
+
+```bash
+cd frontend && npm run dev   # Next.js dev server on port 3000
+```
+
+For development with hot-reload, use `npm run dev` instead of `npm start` for auth and user-server:
+
+```bash
+cd auth && npm run dev
+cd user-server && npm run dev
+```
+
+### Proto / gRPC Development
+
+All gRPC service contracts are defined in `proto/services.proto`. This single file contains the definitions for:
+
+- **UserService** — user CRUD, search, course management, enrollments
+- **ResourceService** — resource CRUD, access logging
+- **FileService** — presigned upload/download URL generation
+- **SystemService** — metrics recording, incident tracking, backup status
+
+When you modify `services.proto`, all services that reference it will pick up the changes on restart — no separate code generation step is required because the project uses dynamic proto loading at runtime.
+
+### Database Schema
+
+The project uses three separate Prisma schemas, each scoped to its own domain:
+
+| Schema location             | Scope                                    |
+|-----------------------------|------------------------------------------|
+| `auth/prisma/schema.prisma` | Authentication tables (users, sessions, accounts, verifications) |
+| `user-server/prisma/schema.prisma` | Courses, enrollments                |
+| `file-server/prisma/schema.prisma` | Resources, tags, access logs        |
+
+The `system-server` does not use Prisma — it manages its own tables (metrics, incidents, backups) via raw SQL with the `pg` driver.
+
+To create a new migration after changing a Prisma schema:
+
+```bash
+cd <service> && npx prisma migrate dev --name <migration-name>
+```
+
+### Frontend Development
+
+The frontend is a Next.js 16 app using the App Router, React 19, Tailwind CSS v4, and shadcn/ui components.
+
+Key directories under `frontend/src/`:
+
+```
+src/
+├── app/              # Next.js App Router pages
+│   ├── login/        # Login / sign-up page
+│   ├── courses/      # Course listing (instructor)
+│   ├── upload/       # Resource upload (instructor)
+│   ├── manage/       # Resource management (instructor)
+│   ├── resources/    # Resource browsing and detail view
+│   ├── profile/      # User profile / password change
+│   └── admin/        # Admin dashboard (metrics, announcements)
+├── components/
+│   ├── ui/           # shadcn/ui primitives (Button, Dialog, Card, etc.)
+│   ├── auth/         # LoginForm component
+│   └── shell/        # AppShell, Navbar, Sidebar, Topbar, RouteGuard
+└── lib/
+    ├── api.ts        # API client (wraps fetch calls to auth service)
+    ├── auth.ts       # Better Auth client instance
+    ├── AuthContext.tsx # React context for auth state
+    ├── types.ts      # Shared TypeScript types
+    └── utils.ts      # Utility helpers
+```
+
+Run the frontend dev server with hot-reload:
+
+```bash
+cd frontend && npm run dev
+```
+
+The frontend communicates exclusively with the `auth` service. The auth URL is configured via the `NEXT_PUBLIC_AUTH_URL` build argument (set to `http://localhost:4000` in the local Docker Compose setup).
+
+### Testing
+
+**Unit tests** are available in the auth and user-server services:
+
+```bash
+cd auth && npm test
+cd user-server && npm test
+```
+
+**File-server tests:**
+
+```bash
+cd file-server && npm test
+```
+
+Tests require a running PostgreSQL instance and properly configured `.env` files.
 
 ## Deployment Information
-The deployed application can be found at https://chalatus.com/login.
+The deployed application can be found at https://chalatus.com.
 
 ## AI Assistance & Verification
 We used AI in a limited and practical way during the project, mainly when we ran into specific technical issues during development, integration, and deployment. Most of the system design, implementation, and integration work was still completed by our team. AI was most helpful when a problem had several possible causes and we needed a clearer place to start. In those cases, it helped us organize our troubleshooting steps and decide what to check first.
