@@ -459,3 +459,4 @@ Conclusion
 Overall, this project provided hands-on experience in building a full-stack, cloud-native application. It strengthened our understanding of core cloud computing concepts, including containerization, microservices architecture, Kubernetes-based orchestration, and system scalability. These lessons will be valuable for future work involving distributed systems and cloud-based applications.
 
 ## Video Demo
+https://youtu.be/bDgVz5NvRYE
