@@ -377,6 +377,7 @@ cp auth/.env.example auth/.env
 cp user-server/.env.example user-server/.env
 cp file-server/.env.example file-server/.env
 ```
+Credentials sent to TA.
 
 Key variables:
 
